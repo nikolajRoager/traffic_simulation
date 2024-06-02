@@ -1,0 +1,161 @@
+{
+    "nodes":
+    [
+        {
+            "type":"Trafficlight",
+            "pos":[-4, 0]
+        },
+        {
+            "type":"Intersect",
+            "pos":[-5, 0]
+        },
+        {
+            "type":"Intersect",
+            "pos":[-4, 1]
+        },
+        {
+            "type":"Intersect",
+            "pos":[-4,-1]
+        },
+        {
+            "type":"Trafficlight",
+            "pos":[ 4, 0]
+        },
+        {
+            "type":"Intersect",
+            "pos":[ 5, 0]
+        },
+        {
+            "type":"Intersect",
+            "pos":[ 4, 1]
+        },
+        {
+            "type":"Intersect",
+            "pos":[ 4,-1]
+        },
+        {
+            "type":"Trafficlight",
+            "pos":[ 0, 4]
+        },
+        {
+            "type":"Intersect",
+            "pos":[ 0, 5]
+        },
+        {
+            "type":"Intersect",
+            "pos":[ 1, 4]
+        },
+        {
+            "type":"Intersect",
+            "pos":[-1, 4]
+        },
+        {
+            "type":"Trafficlight",
+            "pos":[ 0,-4]
+        },
+        {
+            "type":"Intersect",
+            "pos":[ 0,-5]
+        },
+        {
+            "type":"Intersect",
+            "pos":[ 1,-4]
+        },
+        {
+            "type":"Intersect",
+            "pos":[-1,-4]
+        },
+        {
+            "type":"Trafficlight",
+            "pos":[ 0,0]
+        }
+    ],
+
+
+    "auto_roads":
+    [
+        {
+            "road_type":"Byvej",
+            "first":0,
+            "second":1
+        },
+        {
+            "road_type":"Byvej",
+            "first":0,
+            "second":2
+        },
+        {
+            "road_type":"Byvej",
+            "first":0,
+            "second":3
+        },
+        {
+            "road_type":"Landevej",
+            "first":0,
+            "second":16
+        },
+
+        {
+            "road_type":"Byvej",
+            "first":4,
+            "second":5
+        },
+        {
+            "road_type":"Byvej",
+            "first":4,
+            "second":6
+        },
+        {
+            "road_type":"Byvej",
+            "first":4,
+            "second":7
+        },
+        {
+            "road_type":"Landevej",
+            "first":4,
+            "second":16
+        },
+
+        {
+            "road_type":"Byvej",
+            "first":8,
+            "second":9
+        },
+        {
+            "road_type":"Byvej",
+            "first":8,
+            "second":10
+        },
+        {
+            "road_type":"Byvej",
+            "first":8,
+            "second":11
+        },
+        {
+            "road_type":"Landevej",
+            "first":8,
+            "second":16
+        },
+
+        {
+            "road_type":"Byvej",
+            "first":12,
+            "second":13
+        },
+        {
+            "road_type":"Byvej",
+            "first":12,
+            "second":14
+        },
+        {
+            "road_type":"Byvej",
+            "first":12,
+            "second":15
+        },
+        {
+            "road_type":"Landevej",
+            "first":12,
+            "second":16
+        }
+    ]
+}

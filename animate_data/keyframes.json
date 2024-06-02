@@ -1,0 +1,41 @@
+{
+    "vehicles":
+    [
+        {
+            "type":"car",
+            "length":3,
+            "keyframes":
+            [
+                {
+                        "time":0,
+                        "road":0,
+                        "direction":true,
+                        "lane":1,
+                        "pos":200,
+                        "speed":22,
+                        "acc":0
+
+                },
+                {
+                        "time":10,
+                        "road":0,
+                        "direction":true,
+                        "lane":1,
+                        "pos":420,
+                        "speed":22,
+                        "acc":-6.86
+                },
+                {
+                        "time":13.206997084548105,
+                        "road":0,
+                        "direction":true,
+                        "lane":1,
+                        "pos":455.2769679300292,
+                        "speed":0,
+                        "acc":0
+                }
+
+            ]
+        }
+    ]
+}

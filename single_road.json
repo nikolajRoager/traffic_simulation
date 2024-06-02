@@ -1,0 +1,23 @@
+{
+    "nodes":
+    [
+        {
+            "type":"Hellhole",
+            "pos":[-1000, -1000]
+        },
+        {
+            "type":"Hellhole",
+            "pos":[3000, -3000]
+        }
+    ],
+    "auto_roads":
+    [
+        {
+            "type":"Motortrafikvej",
+            "first":0,
+            "second":1,
+            "lanes":3,
+            "one_way":false
+        }
+    ]
+}
