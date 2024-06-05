@@ -1,13 +1,12 @@
 color RoadType_colors[] =
 {
-    color(80,30,20),//Skolevej
     color(80,50,50),//Byvej
     color(80,80,80),//Landevej
     color(30,30,30),//Motortrafikvej
     color(30,30,30)//Motorvej
 };
 
-float lane_width = 3;//Global variable, graphical width of road
+float lane_width = 3;//Global variable, graphical width of road in meters
 
 class Road
 {
@@ -36,16 +35,14 @@ class Road
         int secondI = O.getInt("second");
         lanes  = O.getInt("lanes",1);
         one_way= O.getBoolean("one_way",false);
-        if (type_str.equals("gaagade"))
+        if (type_str.equals("Byvej"))
             type=0;
-        else if (type_str.equals("Byvej"))
-            type=1;
         else if (type_str.equals("Landevej"))
-            type=2;
+            type=1;
         else if (type_str.equals("Motortrafikvej"))
-            type=3;
+            type=2;
         else if (type_str.equals("Motorvej"))
-            type=4;
+            type=3;
         else
             throw new IllegalArgumentException("Illegal road type "+type_str);
 
