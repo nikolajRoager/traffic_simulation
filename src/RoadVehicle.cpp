@@ -1,5 +1,6 @@
 #include "RoadVehicle.hpp"
 
+#include "TrafficExceptions.hpp"
 
 
 //100 km/h = 100000/3600 m/s = 1000/36 m/s=250/9 m/s, divide by the time it took for us to reach this speed to get average acceleration, this undersells acceleration at low speed and oversells it at high speed

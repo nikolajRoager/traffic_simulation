@@ -40,7 +40,7 @@ public:
 
     //Advance until this time
     //@param simulation time in secondes
-    //@throw an exception if we advance past the next scheduled update
+    //@throw vehicle_past_update_exception if we advance past the next scheduled update
     void setTime(double time);
     double gotoUpdate() noexcept;//Same as the above, but goes exactly to the next scheduled update, returns the new time, does nothing if no new updates exist
 

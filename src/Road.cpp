@@ -4,6 +4,7 @@
 
 using std::string;
 
+#include "TrafficExceptions.hpp"
 
 Road::Road(Json::Value& object){
 

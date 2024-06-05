@@ -1,5 +1,6 @@
 #include "Hellhole.hpp"
 
+#include "TrafficExceptions.hpp"
 
 
 //Add a new road, or set a particular road
