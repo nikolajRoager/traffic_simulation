@@ -21,7 +21,7 @@ if (MSVC)
     add_compile_options(/W4)
 else()
     # additional warnings
-    add_compile_options(-Wall -Wextra -Wpedantic -Werror)#Yep, I will NOT even compile anything which has a warning
+    add_compile_options(-Wall -Wextra -Wpedantic -Werror -O3)#Yep, I will NOT even compile anything which has a warning
 endif()
 
 

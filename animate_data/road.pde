@@ -34,7 +34,7 @@ class Road
         int firstI = O.getInt("first");
         int secondI = O.getInt("second");
         lanes  = O.getInt("lanes",1);
-        one_way= O.getBoolean("one_way",false);
+        one_way= O.getBoolean("oneWay",false);
         if (type_str.equals("Byvej"))
             type=0;
         else if (type_str.equals("Landevej"))
@@ -58,7 +58,7 @@ class Road
 
         theta=atan2(sinTheta,cosTheta);
 
-        no_overtake=O.getBoolean("no_overtake",false);
+        no_overtake=O.getBoolean("noOvertake",false);
     }
 
 

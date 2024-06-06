@@ -24,6 +24,9 @@ public:
         return msg.c_str();
     };
 };
+
+
+
 class road_address_exception: public std::exception
 {
 private:

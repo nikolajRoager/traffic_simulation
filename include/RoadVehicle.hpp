@@ -1,5 +1,8 @@
 #pragma once
 
+
+#include <vector>
+
 /**Vehicle base class, this is the interface the road knows about
 * All vehicles have the same basic stats, like length, maxSpeed and acceleration
 *
@@ -19,7 +22,7 @@ protected:
     double last_update_time=0;
 
     //Current physics and state, once again all road vehicles have these
-    int roadId=-1;//-1 : the car has despawned/not spawned yet
+    size_t roadId=-1;//-1 : the car has despawned/not spawned yet
     int lane=0;
     double speed=0;
     double pos=0.0;
@@ -50,7 +53,7 @@ public:
 
 
     //mainly for Testing, debugging, all vehicles can tell exactly what road and lane we are on, and where we are on this
-    int getRoadId() const noexcept {return roadId;}
+    size_t getRoadId() const noexcept {return roadId;}
     int   getLane() const noexcept {return lane;}
     double getPos() const noexcept {return pos;}
 };

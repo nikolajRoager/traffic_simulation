@@ -1,5 +1,8 @@
 #pragma once
 #include "json/json.h"
+#include <memory>//Shared pointers
+
+class Node;//We don't need to know the details of the Node class in this header file
 
 /**
 * Roads are used by road vehicles (for the purpose of this simulations, streets are also considered part of the road class)
@@ -20,17 +23,19 @@ class Road{
 private:
 
 
-    int roadID;//A unique ID for this road (the index in the road list), used to speed up the pathfinding algorithm
+    size_t roadID;//A unique ID for this road (the index in the road list), used to speed up the pathfinding algorithm
 
-    //Node start;
-    //Node end;
+    //Guaranteed NOT NULL after the constructor
+    //I still use shared pointers, this way they will never Dangle, if we delete the global list of Nodes before the Roads the Nodes will persist
+    std::shared_ptr<const Node> start;
+    std::shared_ptr<const Node> end;
 
 
     RoadType type;
 
 
-    bool no_overtake;
-    bool one_way;
+    bool noOvertake;
+    bool oneWay;
     int lanes;
 
     //For telling if a car has driven of the end, the length of the road from one end to another
@@ -39,8 +44,16 @@ private:
 
 public:
     //@throws city_loader_errors
-    Road(Json::Value& val);
+    Road(size_t _roadID,Json::Value& object,std::vector<std::shared_ptr<Node> > Nodes);
+
+    ~Road();
 
     //For the pathfinding algorithm, get the ID
-    int getRoadID() const noexcept {return roadID;}
+    size_t getRoadID() const noexcept {return roadID;}
+
+
+    //Get a reference to Node other than This, this is used by the Node when adding Road to verify that the Road they have been married to recognizes them AND for getting their neighbour for quick lookup
+    //@param this NodeID of the Node we are looking for, I send the ID and not a reference to the node itself, because we might need to call it from the pathfinder which only knows the ID's
+    //@throw city_loading_exception if This is not one of my ends, or if Start or End is null
+    const Node& getOther(size_t ThisID) const;
 };

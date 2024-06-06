@@ -17,7 +17,8 @@
             "first":0,
             "second":1,
             "lanes":3,
-            "one_way":false
+            "oneWay":false,
+            "noOvertake":true
         }
     ]
 }
