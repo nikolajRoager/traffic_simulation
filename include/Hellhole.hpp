@@ -56,7 +56,7 @@ public:
     *@param localID Use the ID in the list of roads of this node instead (0 to RoadNumber) the latter is more uesful for pathfinding
     *@throw road_address_exception on illegal roadID (including road not loaded)
     *Get a const pointer to the Neighbour of this Node at the end of this road*/
-    virtual const Node &getNeighbour(size_t roadId, bool local);
+    virtual const Node &getNeighbour(size_t roadId, bool local=false);
 
 
 };

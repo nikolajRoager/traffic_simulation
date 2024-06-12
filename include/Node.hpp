@@ -52,7 +52,7 @@ public:
     *@param roadID the roadID of the road we are looking for
     *@param localID Use the ID in the list of roads of this node instead (0 to RoadNumber) the latter is more uesful for pathfinding
     *@throw road_address_exception on illegal roadID (including road not loaded)*/
-    virtual const Road &getRoad(size_t roadId, bool local=false);
+    virtual const Road &getRoad(size_t roadId, bool local=false)=0;
 
 
 
@@ -62,7 +62,7 @@ public:
     *@param localID Use the ID in the list of roads of this node instead (0 to RoadNumber) the latter is more uesful for pathfinding
     *@throw road_address_exception on illegal roadID (including road not loaded)
     *Get a const pointer to the Neighbour of this Node at the end of this road*/
-    virtual const Node &getNeighbour(size_t roadId, bool local);
+    virtual const Node &getNeighbour(size_t roadId, bool local=false)=0;
 
 
     //CORRECTION, THIS SHOULD BE MOVED TO AN INTERSECTION SUBCLASS, IT DOES NOT MAKE SENSE FOR END-NODES

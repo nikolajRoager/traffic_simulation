@@ -1,6 +1,17 @@
 #include<iostream>
+#include"Hellhole.hpp"
+#include"Node.hpp"
 
 using std::cout, std::cin, std::endl;
+
+class DUM
+{
+    int dumdum;
+public:
+    DUM(int dum):dumdum(dum){}
+
+    void test() const {cout<<dumdum<<endl;}
+};
 
 int main(int argc, char* argv[])
 {

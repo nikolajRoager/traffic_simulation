@@ -1,12 +1,19 @@
 #include "Hellhole.hpp"
 
+#include <iostream>
+
 #include "TrafficExceptions.hpp"
 
 #include "Road.hpp"
 
 void Hellhole::addRoad(const Road* R){
     //If there is no pre-existing road
-    if (myRoad==nullptr)
+
+    if (myRoad!=nullptr)
+        throw road_address_exception(1,1,nodeID);
+    else if(R==nullptr)
+        throw TrafficSimulation_error("Adding NULL road to Node "+std::to_string(nodeID));
+    else
     {
         //NOTE this only works if addRoad is called AFTER both end and start has been assigned correctly
         myNeighbour =nullptr;
@@ -20,8 +27,6 @@ void Hellhole::addRoad(const Road* R){
         myRoad=R;
 
     }
-    else
-        throw road_address_exception(1,1,nodeID);
 }
 
 
