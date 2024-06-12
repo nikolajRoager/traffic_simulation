@@ -1,5 +1,6 @@
 #pragma once
 #include "json/json.h"
+#include "ICityNetwork.hpp"
 #include <memory>//Shared pointers
 
 class Node;//We don't need to know the details of the Node class in this header file
@@ -26,7 +27,7 @@ private:
     size_t roadID;//A unique ID for this road (the index in the road list), used to speed up the pathfinding algorithm
 
     //Guaranteed NOT NULL after the constructor
-    //I still use shared pointers, this way they will never Dangle, if we delete the global list of Nodes before the Roads the Nodes will persist
+    //I still use shared pointers, this way they will not risk accidentally deleting the pointers
     std::shared_ptr<const Node> start;
     std::shared_ptr<const Node> end;
 
@@ -44,7 +45,7 @@ private:
 
 public:
     //@throws city_loader_errors
-    Road(size_t _roadID,Json::Value& object,std::vector<std::shared_ptr<Node> > Nodes);
+    Road(size_t _roadID,Json::Value& object,ICityNetwork& City/*Not const, as we will be updating the nodes we connect to*/);
 
     ~Road();
 
@@ -54,6 +55,6 @@ public:
 
     //Get a reference to Node other than This, this is used by the Node when adding Road to verify that the Road they have been married to recognizes them AND for getting their neighbour for quick lookup
     //@param this NodeID of the Node we are looking for, I send the ID and not a reference to the node itself, because we might need to call it from the pathfinder which only knows the ID's
-    //@throw city_loading_exception if This is not one of my ends, or if Start or End is null
+    //@throw TrafficSimulation_error if This is not one of my ends, or if Start or End is null
     const Node& getOther(size_t ThisID) const;
 };
