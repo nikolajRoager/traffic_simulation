@@ -66,4 +66,6 @@ public:
     bool getNoOvertake() const{return noOvertake;}
     bool getOneWay() const{return oneWay;}
     int  getLanes() const{return lanes;}
+
+    double getLength() const{return length;}
 };

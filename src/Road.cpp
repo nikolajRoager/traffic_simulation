@@ -82,14 +82,16 @@ Road::Road(size_t _roadID,Json::Value& object,ICityNetwork& City){
 
     start=notconst_start;
     end=notconst_end;
+    if (end==nullptr || start==nullptr)
+        throw TrafficSimulation_error ("Error in Road "+std::to_string(roadID)+"; null end points");
     //If we get here start and end are NOT NULL, and thus addRoad does not fail
+
+    length =start->getDist(*end);
 
     notconst_start->addRoad(this);
     notconst_end->addRoad(this);
 
 
-    if (end==nullptr || start==nullptr)
-        throw TrafficSimulation_error ("Error in Road "+std::to_string(roadID)+"; null end points");
 
 }
 

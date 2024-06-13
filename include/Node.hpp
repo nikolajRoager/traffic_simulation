@@ -17,14 +17,20 @@ THIS IS INTENTIONAL, IMPLEMENTING METHODS TO HANDLE IT WOULD REQUIRE THE NODES A
 class Road;//We don't need to use any members of road in this header file
 
 class Node{
-protected:
+    //Derived classes should only modify this during the constructor
+private:
     size_t nodeID;//A unique ID for this node (the index in the node list), used to speed up the pathfinding algorithm
 
+    //Position on 2D map in meters
+    double x;
+    double y;
 
 public:
     //Load, without loading the roads (they get loaded later, and then they are matched to the nodes)
     //@param ID the nodeID of this node
-    Node(size_t ID) noexcept : nodeID(ID){};
+    Node(size_t ID,double _x, double _y) noexcept : nodeID(ID),x(_x),y(_y){};
+
+    double getDist(const Node& Other)const;
 
 
     //Checks all own

@@ -7,9 +7,10 @@
 #include "TrafficExceptions.hpp"
 #include "Road.hpp"
 
+#define tolerance 1e-8
 
 TEST(Test_Loading, Add_Null_road_to_Node_or_query_bad_address) {
-    std::shared_ptr<Node> A = std::make_shared<Hellhole>(0);
+    std::shared_ptr<Node> A = std::make_shared<Hellhole>(0,0,0);
 
     ASSERT_THROW(A->addRoad(nullptr),TrafficSimulation_error);
 
@@ -41,8 +42,8 @@ Json::Value to_Json(const std::string& text)
 struct faux_CityNetwork : public ICityNetwork
 {
     //This DOES NOT make sure ID's are never reused
-    std::shared_ptr<Node> A = std::make_shared<Hellhole>(0);
-    std::shared_ptr<Node> B = std::make_shared<Hellhole>(1);
+    std::shared_ptr<Node> A = std::make_shared<Hellhole>(0,-1500,2000);//Default distance of 5 km
+    std::shared_ptr<Node> B = std::make_shared<Hellhole>(1,1500,-2000);
 
     //I am not going to test what happens ifthe CityNetwork LIES about the size
     size_t getNodesSize() const noexcept {return 2;}
@@ -184,6 +185,8 @@ TEST(Test_Loading, Initialize_Road_check_parameters) {
         ASSERT_EQ(R.getLanes(),3);
         ASSERT_EQ(R.getNoOvertake(),false);
         ASSERT_EQ(R.getOneWay(),true);
+
+        ASSERT_NEAR(R.getLength(),5000,tolerance );//This test setup gives 5 km road
     }
 }
 

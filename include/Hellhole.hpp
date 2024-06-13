@@ -22,7 +22,8 @@ private:
 public:
     //Load, without loading the roads (they get loaded later, and then they are matched to the nodes)
     //@param ID the nodeID of this node
-    Hellhole(size_t ID) noexcept :Node(ID),myRoad(nullptr){};
+    //@param x,y position in meters
+    Hellhole(size_t ID,double x, double y) noexcept :Node(ID,x,y),myRoad(nullptr){};
 
     //We inherit this function from our parent class
     //int getNodeID() const noexcept {return nodeID;}
