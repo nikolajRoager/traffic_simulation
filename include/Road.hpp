@@ -57,4 +57,13 @@ public:
     //@param this NodeID of the Node we are looking for, I send the ID and not a reference to the node itself, because we might need to call it from the pathfinder which only knows the ID's
     //@throw TrafficSimulation_error if This is not one of my ends, or if Start or End is null
     const Node& getOther(size_t ThisID) const;
+
+
+    //Mainly for Testing that the JSon file is loaded correctly
+    RoadType getType() const{return type;}
+
+
+    bool getNoOvertake() const{return noOvertake;}
+    bool getOneWay() const{return oneWay;}
+    int  getLanes() const{return lanes;}
 };

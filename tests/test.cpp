@@ -145,7 +145,47 @@ TEST(Test_Loading, Initialize_Road_with_invalid_JSON) {
 }
 
 
+TEST(Test_Loading, Initialize_Road_check_parameters) {
 
+    //Verify default values work
+    {
+        faux_CityNetwork mockTown;
+        Json::Value RoadRoot_scant=to_Json(
+                            "{\n \
+                              \"type\"      :\"Motortrafikvej\",\n \
+                              \"first\"     :0,\n \
+                              \"second\"    :1\n \
+                           }");
+
+        Road R(555,RoadRoot_scant,mockTown);//Use a weird number ID, to make sure we don't default to 0 and succeed tests we should fail
+
+        //Default values
+        ASSERT_EQ(R.getType(),motortrafficroad);
+        ASSERT_EQ(R.getLanes(),1);
+        ASSERT_EQ(R.getNoOvertake(),true);
+        ASSERT_EQ(R.getOneWay(),false);
+    }
+    {
+        faux_CityNetwork mockTown;
+        Json::Value RoadRoot_scant=to_Json(
+                            "{\n \
+                              \"type\"      :\"Byvej\",\n \
+                              \"first\"     :0,\n \
+                              \"second\"    :1,\n \
+                              \"lanes\"     :3,\n \
+                              \"oneWay\"    :true,\n\
+                              \"noOvertake\":false\n\
+                           }");
+
+        Road R(555,RoadRoot_scant,mockTown);
+
+        //NOT Default values
+        ASSERT_EQ(R.getType(),street);
+        ASSERT_EQ(R.getLanes(),3);
+        ASSERT_EQ(R.getNoOvertake(),false);
+        ASSERT_EQ(R.getOneWay(),true);
+    }
+}
 
 TEST(Test_Loading, Initialize_Road_with_valid_or_invalid_JSON) {
     faux_CityNetwork mockTown6;

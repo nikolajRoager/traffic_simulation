@@ -36,3 +36,9 @@ The number of cars exiting the road, should match the number of cars entering th
 At the end, the car should know that it is not on the road anymore.
 The keyframe JSON file must have the expected keyframes
 
+
+The basic structure
+-----------
+A problem has come up, the Roads and Nodes need to be loaded into a CityNetwork interface. They need to be able to refer to each other somehow, the easiest would be to have pointers stored in the Roads or Nodes ... but that is not possible to load in one pass.
+
+Even the `this` pointer is
