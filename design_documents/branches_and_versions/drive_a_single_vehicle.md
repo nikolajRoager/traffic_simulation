@@ -1,6 +1,5 @@
-Drive a single Vehicles
+Drive a single Vehicle
 =========
-I misspelled the name when I made the branch, and now I am stuck with it.
 
 Implement the following story
 -----------
