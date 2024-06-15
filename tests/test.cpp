@@ -2,10 +2,12 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <sstream>
 
 #include "Hellhole.hpp"
 #include "TrafficExceptions.hpp"
 #include "Road.hpp"
+#include "CityNetwork.hpp"
 
 #define tolerance 1e-8
 
@@ -281,6 +283,39 @@ The number of cars exiting the road, should match the number of cars entering th
 At the end, the car should know that it is not on the road anymore.
 The keyframe JSON file must have the expected keyframes
 */
+
+TEST(Test_Loading, Load_CityNetwork_From_Stream)
+{
+
+    std::string JSon_City_String(
+    "{\n\
+        \"nodes\":\n\
+        [\n\
+            {\n\
+                \"type\":\"Hellhole\",\n\
+                \"pos\":[-1000, -1000]\n\
+            },\n\
+            {\n\
+                \"type\":\"Hellhole\",\n\
+                \"pos\":[3000, -3000]\n\
+            }\n\
+        ],\n\
+        \"roads\":\n\
+        [\n\
+            {\n\
+                \"type\":\"Motortrafikvej\",\n\
+                \"first\":0,\n\
+                \"second\":1,\n\
+                \"lanes\":3,\n\
+                \"oneWay\":false,\n\
+                \"noOvertake\":true\n\
+            }\n\
+        ]\n\
+    }"
+   );
+    std::stringstream S(JSon_City_String);
+    CityNetwork City(S);
+}
 
 
 int main(int argc, char **argv) {

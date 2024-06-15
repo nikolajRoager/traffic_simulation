@@ -25,6 +25,7 @@ target_link_libraries(Test Car)
 target_link_libraries(Test Road)
 target_link_libraries(Test Node)
 target_link_libraries(Test Hellhole)
+target_link_libraries(Test CityNetwork)
 
 # Add test
 add_test(NAME TestTraffic COMMAND Test)
