@@ -1,4 +1,4 @@
-Drive a single Vehicle
+Drive Vehicle
 =========
 
 Implement the following story
@@ -17,17 +17,6 @@ At the end, the car must receive a signal that it is done
 The program should save the journey of this car in a Keyframe
 
 Tests:
-Test suite 0: In order to even add a vehicle, we must test that loading nodes and roads even work, we need a test suite which verifies that:
-Verify that a "Hellhole" Node, addRoad and getRoad on empty Node throws error when setting nullptr road
-Given two "Hellhole" nodes in some list: Try joining them with a road defined by a JSon object. Test that JSON errors work:
-A JSon object with an invalid node ID throws an error,
-A JSon object with invalid road type throws an error,
-A JSon object with missing required elements throws an error (missing "first", "second" or "type"),
-Given a correct JSon object, verify that the RoadID is correct from the Road
-Verify that the two "Hellhole"s have the correct number of Roads
-Verify that the two "Hellhole"s have the correct RoadID (test getRoadID)
-Verify that the two "Hellhole"s have the correct neighbours
-
 Add a car to a road, advance time and verify that the car
 verify that exceptions are thrown when "overstepping" updates for car
 Adding a car to the road, should have both the car and the road associated with each other.
@@ -35,9 +24,3 @@ The number of cars exiting the road, should match the number of cars entering th
 At the end, the car should know that it is not on the road anymore.
 The keyframe JSON file must have the expected keyframes
 
-
-The basic structure
------------
-A problem has come up, the Roads and Nodes need to be loaded into a CityNetwork interface. They need to be able to refer to each other somehow, the easiest would be to have pointers stored in the Roads or Nodes ... but that is not possible to load in one pass.
-
-Even the `this` pointer is
