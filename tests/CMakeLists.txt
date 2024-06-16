@@ -10,11 +10,22 @@ add_executable(Test test.cpp)
 # Include directories
 target_include_directories(Test PRIVATE ../include)
 
-# Link the main project executable or libraries if needed
-# target_link_libraries(Test Class)
+
 
 # Link to gtest framework
 target_link_libraries(Test ${GTEST_LIBRARIES} pthread )
 
+
+#Link Jsoncpp
+target_link_libraries(Test ${JSONCPP_LIBRARIES})
+
+# Link libraries to main program
+target_link_libraries(Test RoadVehicle)
+target_link_libraries(Test Car)
+target_link_libraries(Test Road)
+target_link_libraries(Test Node)
+target_link_libraries(Test Hellhole)
+target_link_libraries(Test CityNetwork)
+
 # Add test
-add_test(NAME TestDate COMMAND Test)
+add_test(NAME TestTraffic COMMAND Test)
