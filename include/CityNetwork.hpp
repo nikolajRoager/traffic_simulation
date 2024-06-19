@@ -38,12 +38,12 @@ public:
 
     virtual size_t getNodesSize() const noexcept
     {
-        return Nodes.size();
+        return nodeSize;
     }
 
     virtual size_t getRoadsSize() const noexcept
     {
-        return Roads.size();
+        return roadSize;
     }
 
     //Expected to throw address errors when out of bounds
@@ -55,7 +55,7 @@ public:
     }
     virtual std::shared_ptr<Road> getRoad(size_t RoadID)
     {
-        if(RoadID>=nodeSize)
+        if(RoadID>=roadSize)
             throw road_address_exception(RoadID,roadSize);
         return Roads[RoadID];
     }

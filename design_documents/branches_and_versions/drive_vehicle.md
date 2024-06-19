@@ -12,15 +12,12 @@ Requirements
 -------------
 The car must be a derived class from the RoadVehicle class
 
-At the end, the car must receive a signal that it is done
-
 The program should save the journey of this car in a Keyframe
 
 Tests:
-Add a car to a road, advance time and verify that the car
-verify that exceptions are thrown when "overstepping" updates for car
+Add a car to a road, advance time and verify that the car has the expected location
 Adding a car to the road, should have both the car and the road associated with each other.
+verify that exceptions are thrown when "overstepping" updates for car
 The number of cars exiting the road, should match the number of cars entering the road
 At the end, the car should know that it is not on the road anymore.
 The keyframe JSON file must have the expected keyframes
-

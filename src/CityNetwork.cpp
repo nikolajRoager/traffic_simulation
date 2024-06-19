@@ -37,6 +37,8 @@ CityNetwork::CityNetwork(std::istream& CityNetworkJsonStream)
             {
                 Nodes.push_back(std::make_shared<Hellhole>(id++,Pos[0].asInt(),Pos[1].asInt()));
             }
+            else
+                throw TrafficSimulation_error(std::string("Error loading City Network; no Node type: ")+Type);
 
 
         }

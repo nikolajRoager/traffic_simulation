@@ -1,7 +1,7 @@
 #pragma once
 
-
-#include <vector>
+#include "Node.hpp"
+#include "Road.hpp"
 
 /**Vehicle base class, this is the interface the road knows about
 * All vehicles have the same basic stats, like length, maxSpeed and acceleration
@@ -22,10 +22,12 @@ protected:
     double last_update_time=0;
 
     //Current physics and state, once again all road vehicles have these
-    size_t roadId=-1;//-1 : the car has despawned/not spawned yet
+    const Road* myRoad;
     int lane=0;
     double speed=0;
     double pos=0.0;
+
+    bool direction;//Do we go from first to second? or the other way
 
     //Additional stats must be added by derived classes
 
@@ -41,6 +43,8 @@ public:
     double nextUpdate() noexcept;
 
 
+
+
     //Advance until this time
     //@param simulation time in secondes
     //@throw vehicle_past_update_exception if we advance past the next scheduled update
@@ -48,12 +52,15 @@ public:
     double gotoUpdate() noexcept;//Same as the above, but goes exactly to the next scheduled update, returns the new time, does nothing if no new updates exist
 
     //Drive onto this new road
+    //@param Road: what we enter, const, because the roads own the car, not the other way around
+    //@param front: do we drive from first to second node? or the other way around
+    //@param lane: what lane do we enter on
     //@param simulation time in secondes
-    void enterRoad(double time) noexcept;
+    void enterRoad(const Road* R, bool front, int lane, double time) noexcept;
 
 
     //mainly for Testing, debugging, all vehicles can tell exactly what road and lane we are on, and where we are on this
-    size_t getRoadId() const noexcept {return roadId;}
+    size_t getRoadID() const noexcept { return myRoad ==nullptr ? -1 :myRoad->getRoadID();}
     int   getLane() const noexcept {return lane;}
     double getPos() const noexcept {return pos;}
 };
