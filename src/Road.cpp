@@ -92,7 +92,9 @@ Road::Road(size_t _roadID,Json::Value& object,ICityNetwork& City){
     notconst_end->addRoad(this);
 
 
-
+    //cars_on_lanes[0] is the outer lane
+    //For Two-way roads cars_on_lanes[lanes+0] is the outer lane of the other way
+    cars_on_lanes=std::vector< std::set<std::shared_ptr<RoadVehicle>,CompareVehicleOnLane > >(oneWay ? lanes : lanes*2);
 }
 
 //Get a reference to Node other than This, this is used by the Node when adding Road to verify that the Road they have been married to recognizes them AND for getting their neighbour for quick lookup
@@ -115,3 +117,13 @@ Road::~Road()
 {
 
 }
+
+void Road::addVehicle(double /*time*/, int /*target_lane*/, bool /*direction*/,RoadVehicle& /*Vehicle*/)
+{
+
+ //   if (cars_on_lanes[target_lane].empty() || cars_on_lanes[target_lane].begin())
+    {
+   //     Vehicle
+    }
+}
+

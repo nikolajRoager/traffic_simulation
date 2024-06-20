@@ -1,4 +1,6 @@
 #include "RoadVehicle.hpp"
+#include "Node.hpp"
+#include "Road.hpp"
 
 #include "TrafficExceptions.hpp"
 
@@ -11,19 +13,15 @@ Going from 100 km/h=250/9 m/s to 0 m/s with breaking acceleration, is the same a
 So  b = (250/9 m/s)^2/2d = (31250/81 m/s)/d
 */
 
-#define BrakingDist100kmh_factor (31250/81)
+#define BrakingDist100kmh_factor (31250.0/81.0)
 
-RoadVehicle::RoadVehicle(double _length, double _maxSpeed, double SecondsTo100kmh , double BrakingDist100kmh) noexcept:
+RoadVehicle::RoadVehicle(double _length, double _maxSpeed, double SecondsTo100kmh , double BrakingDist100kmh,double time,const Road* R,int lane,double speed, double pos, bool direction) noexcept:
 length(_length),
 maxSpeed(_maxSpeed),
 acceleration(SecondsTo100kmh_factor/SecondsTo100kmh),
 braking(BrakingDist100kmh_factor/BrakingDist100kmh),
-myRoad(nullptr),
-lane(0),
-speed(0.0),
-pos(0.0)
+current_state(time,R,lane,speed,pos,direction)
 {
-
 }
 
 
@@ -36,36 +34,100 @@ double RoadVehicle::nextUpdate() noexcept
 
 //Advance until this time
 //@throws an exception if we advance past the next scheduled update
-void RoadVehicle::setTime(double /*time*/)
+void RoadVehicle::setTime(double time)
 {
-    //STUB
+    //If the current state is null, there is nothing to do
+    if (current_state.myRoad!=nullptr)
+    {
+        current_state.time=time;
+    }
 }
 
 //Same as the above, but goes exactly to the next scheduled update, returns the new time, does nothing if no new updates exist
-double RoadVehicle::gotoUpdate() noexcept
+double RoadVehicle::gotoUpdate(double time) noexcept
 {
-    return 0.0;//STUB
+    //No change, if no update
+    return time;//STUB
 }
 
 //Drive onto this new road
-void RoadVehicle::enterRoad(const Road* R, bool _front, int _lane, double time) noexcept
+void RoadVehicle::enterRoad(const Road* R, bool _direction, int _lane, double time) noexcept
 {
-    myRoad = R;
-
-    if (myRoad!=nullptr)
-    {
-        direction=_front;
-        lane=_lane;
-        speed=0;
-
-        pos=direction?0:R->getLength();
-        last_update_time=time;
-    }
+    if (R!=nullptr)
+        current_state=keyframe(time,R,_lane,0.0,0.0,_direction);
     else
-    {
-        direction=false;
-        lane=0;
-        speed=0;
-        pos=0;
-    }
+        current_state=keyframe(time);
+    keyframes.insert({time,current_state});
+}
+
+
+std::string RoadVehicle::toString()const
+{
+    return "[Car with length "+std::to_string(length)+" m top speed "+std::to_string(maxSpeed)+" m/s acceleration "+std::to_string(acceleration)+" driving "+(current_state.myRoad==nullptr ? "offroad]" :" on road "+std::to_string(current_state.myRoad->getRoadID())+", position "+std::to_string(current_state.pos)+" m, lane "+std::to_string(current_state.lane)+", going direction "+std::to_string(current_state.direction)+", with speed "+std::to_string(current_state.speed)+", m/s at time "+std::to_string(current_state.time)+ " s]");
+}
+
+
+/*
+size_t RoadVehicle::getRoadID(double time) const noexcept
+{
+    const keyframe& K = get_lastFrame(time);
+    //Get highest
+    return K.myRoad ==nullptr ? -1 :K.myRoad->getRoadID();
+}
+
+int   RoadVehicle::getLane(double time) const noexcept
+{
+    return get_lastFrame(time).lane;
+}
+
+double RoadVehicle::getPos(double time) const noexcept
+{
+    return get_lastFrame(time).pos;
+}
+
+bool RoadVehicle::getDirection(double time) const noexcept
+{
+    return get_lastFrame(time).direction;
+}
+
+double RoadVehicle::getSpeed(double time) const noexcept
+{
+    return get_lastFrame(time).speed;
+}
+
+double RoadVehicle::getTime(double time) const noexcept
+{
+    return get_lastFrame(time).time;
+}*/
+
+
+
+size_t RoadVehicle::getRoadID() const noexcept
+{
+    return current_state.myRoad ==nullptr ? -1 :current_state.myRoad->getRoadID();
+}
+
+int   RoadVehicle::getLane() const noexcept
+{
+    return current_state.lane;
+}
+
+double RoadVehicle::getPos() const noexcept
+{
+    return current_state.pos;
+}
+
+bool RoadVehicle::getDirection() const noexcept
+{
+    return current_state.direction;
+}
+
+double RoadVehicle::getSpeed() const noexcept
+{
+    return current_state.speed;
+}
+
+double RoadVehicle::getTime() const noexcept
+{
+    return current_state.time;
 }

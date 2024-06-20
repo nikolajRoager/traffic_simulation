@@ -7,6 +7,7 @@
 //A collection of errors, related to the traffic simulation
 
 
+#include "RoadVehicle.hpp"
 
 
 //Used as a parent class for all MY errors, also used as a generic error message
@@ -60,4 +61,12 @@ class node_address_exception: public TrafficSimulation_error
 {
 public:
     node_address_exception(int nodeID, int maxNodes) noexcept : TrafficSimulation_error("Asked for Node with ID"+std::to_string(nodeID)+" should be less than "+std::to_string(maxNodes)){}
+};
+
+
+//These two cars crashed, thus crashing the simulation
+class CarCrash: public TrafficSimulation_error
+{
+public:
+    CarCrash(const RoadVehicle& front, const RoadVehicle& rear) noexcept : TrafficSimulation_error("Car collision, this car: "+front.toString()+" drove into the rear of this car: "+rear.toString()){}
 };

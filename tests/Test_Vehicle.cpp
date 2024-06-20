@@ -13,6 +13,7 @@
 
 #define tolerance 1e-8
 
+#define KMH_TO_MS (1000.0/(60.0*60.0))
 
 
 CityNetwork CreateMockCity()
@@ -47,14 +48,41 @@ CityNetwork CreateMockCity()
     return CityNetwork(S);
 }
 
-TEST(Test_Vehicle, Add_VehicleToRoad) {
+
+//A scandinavian stationcar please
+RoadVehicle CreateVolvoV60() noexcept
+{
+    //From https://www.media.volvocars.com/ca/en-ca/models/v60/2021/specifications
+    return RoadVehicle(4.635 , 180/*idk how much this is, couldn't get a source, but it is above all speed limits so whatever*/, 6.7, 35);
+}
+
+
+//Verify that this example car has the expected stats
+TEST(Test_Vehicle, Make_Volvo) {
 
     CityNetwork Mocktown = CreateMockCity();
 
-    car Volvo();
+    RoadVehicle VolvoV60 = CreateVolvoV60();
+    ASSERT_NEAR(VolvoV60.getLength(),4.635,tolerance);
+    ASSERT_NEAR(VolvoV60.getMaxSpeed(),180,tolerance);
 
- //   CreateMockCity()
+    //Verify that it takes 6.7 seconds to reach 100 km/h
 
+
+    ASSERT_NEAR(VolvoV60.getAcceleration()*6.7,100*KMH_TO_MS,tolerance);
+
+    ////Verify that braking at braking acceleration from 100 km/h takes 35 m to stop
+    double time_to_stop = 100*KMH_TO_MS/VolvoV60.getBraking();
+
+    ASSERT_NEAR(0.5*time_to_stop*time_to_stop*VolvoV60.getBraking(),35,tolerance);
+
+    //We should not have set a road, so everything should be default
+    ASSERT_EQ(VolvoV60.getRoadID(),-1);
+    ASSERT_EQ(VolvoV60.getLane(),0);
+    ASSERT_EQ(VolvoV60.getPos(),0);
+    ASSERT_EQ(VolvoV60.getDirection(),false);
+    ASSERT_EQ(VolvoV60.getSpeed(),0);
+    ASSERT_EQ(VolvoV60.getTime(),0);
 }
 
 /*

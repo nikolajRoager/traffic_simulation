@@ -2,6 +2,11 @@
 #include "json/json.h"
 #include "ICityNetwork.hpp"
 #include <memory>//Shared pointers
+#include <set>
+#include <vector>
+
+
+#include "RoadVehicle.hpp"
 
 class Node;//We don't need to know the details of the Node class in this header file
 
@@ -43,6 +48,19 @@ private:
     float length;
 
 
+    //One set of cars per lane (2*lanes if we go both ways), sorted by position on the road (0 is always the end)
+    //We use a set, because we want to access the next and before car based on position, we want to insert and remove cars at certain positions when overtaking
+    //BEWARE: if cars drive through their neighbours, we will encounter undefined behaviour, so DO NOT LET THAT HAPPEN
+    struct CompareVehicleOnLane
+    {
+        bool operator()(const std::shared_ptr<RoadVehicle>& left , const std::shared_ptr<RoadVehicle>& right)
+        {
+            return left->getPos()<right->getPos();
+        }
+    };
+
+    std::vector< std::set<std::shared_ptr<RoadVehicle>,CompareVehicleOnLane > > cars_on_lanes;
+
 public:
     //@throws city_loader_errors
     Road(size_t _roadID,Json::Value& object,ICityNetwork& City/*Not const, as we will be updating the nodes we connect to*/);
@@ -68,4 +86,7 @@ public:
     int  getLanes() const{return lanes;}
 
     double getLength() const{return length;}
+
+    //Try to enter a vehicle into this road
+    void addVehicle(double time, int _lane, bool direction,RoadVehicle& Vehicle);
 };
