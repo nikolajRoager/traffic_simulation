@@ -21,8 +21,14 @@ Cars can be added to roads, in this version by "forcing" a spawn (throwing an er
 
 The roads has a function for getting the first and last vehicle, or the vehicle in front or behind a particular location.
 
+
+
+PROBLEMS IN CURRENT IMPLEMENTATION
 The Roads, Cars and CityNetwork should share a reference to current simulation time, replace all the many "time" arguments with that
 
+TEST WHAT HAPPENS WHEN YOU CHANGE THE KEY THINGS GET SORTED BY, CAN WE GET THE NEXT OR PREV ELEMENT IF THE CARS MOVE OFF-SCREEN. IF NOT, STD::SETS SHOULD NOT BE USED
+
+NO THIS DOES NOT WORK, THE POSITION SHOULD NOT BE USED AS A BASIS FOR AN STD::SET, THE STANDARD DOES NOT GUARANTEE DEFINED BEHAVIOR
 
 Tests:
 Create a car, verify that all stats are set correctly
