@@ -64,9 +64,46 @@ public:
 };
 
 
+class InvalidRoadAddress: public TrafficSimulation_error
+{
+public:
+    InvalidRoadAddress(int roadID, const std::string& reason) noexcept : TrafficSimulation_error("Illegal location on road "+std::to_string(roadID)+" : "+ reason){}
+};
+
+
+class InvalidLane: public InvalidRoadAddress
+{
+public:
+    InvalidLane(int roadID,int lane, int maxlane) noexcept : InvalidRoadAddress(roadID, " illegal lane "+std::to_string(lane)+" , must be between 0 and "+std::to_string(maxlane)){}
+};
+
+
+class InvalidPos: public InvalidRoadAddress
+{
+public:
+    InvalidPos(int roadID,double pos, double length) noexcept : InvalidRoadAddress(roadID, " illegal position "+std::to_string(pos)+" m , must be between 0 m and "+std::to_string(length)+" m"){}
+};
+
+
+class InvalidDirection: public InvalidRoadAddress
+{
+public:
+    InvalidDirection(int roadID) noexcept : InvalidRoadAddress(roadID, " illegal direction, asked for return lane on one-way road"){}
+};
+
+
 //These two cars crashed, thus crashing the simulation
 class CarCrash: public TrafficSimulation_error
 {
 public:
     CarCrash(const RoadVehicle& front, const RoadVehicle& rear) noexcept : TrafficSimulation_error("Car collision, this car: "+front.toString()+" drove into the rear of this car: "+rear.toString()){}
 };
+
+//These two cars crashed, thus crashing the simulation
+class CarCrashSpawn: public TrafficSimulation_error
+{
+public:
+    CarCrashSpawn(const RoadVehicle& front, const RoadVehicle& rear) noexcept : TrafficSimulation_error("Car collision, this car: "+front.toString()+" attempted to spawn inside this car: "+rear.toString()+", note: current stats of the spawned cars may not have been updated when this error was thrown"){}
+};
+
+

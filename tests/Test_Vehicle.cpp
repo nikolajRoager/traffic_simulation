@@ -58,10 +58,7 @@ RoadVehicle CreateVolvoV60() noexcept
 
 
 //Verify that this example car has the expected stats
-TEST(Test_Vehicle, Make_Volvo) {
-
-    CityNetwork Mocktown = CreateMockCity();
-
+TEST(Test_Vehicle, Make_Volvo_offroad) {
     RoadVehicle VolvoV60 = CreateVolvoV60();
     ASSERT_NEAR(VolvoV60.getLength(),4.635,tolerance);
     ASSERT_NEAR(VolvoV60.getMaxSpeed(),180,tolerance);
@@ -84,6 +81,32 @@ TEST(Test_Vehicle, Make_Volvo) {
     ASSERT_EQ(VolvoV60.getSpeed(),0);
     ASSERT_EQ(VolvoV60.getTime(),0);
 }
+
+//Drive a Volvo on a road
+TEST(Test_Vehicle, drive_Volvo) {
+    RoadVehicle VolvoV60 = CreateVolvoV60();
+    ASSERT_NEAR(VolvoV60.getLength(),4.635,tolerance);
+    ASSERT_NEAR(VolvoV60.getMaxSpeed(),180,tolerance);
+
+    //Verify that it takes 6.7 seconds to reach 100 km/h
+
+
+    ASSERT_NEAR(VolvoV60.getAcceleration()*6.7,100*KMH_TO_MS,tolerance);
+
+    ////Verify that braking at braking acceleration from 100 km/h takes 35 m to stop
+    double time_to_stop = 100*KMH_TO_MS/VolvoV60.getBraking();
+
+    ASSERT_NEAR(0.5*time_to_stop*time_to_stop*VolvoV60.getBraking(),35,tolerance);
+
+    //We should not have set a road, so everything should be default
+    ASSERT_EQ(VolvoV60.getRoadID(),-1);
+    ASSERT_EQ(VolvoV60.getLane(),0);
+    ASSERT_EQ(VolvoV60.getPos(),0);
+    ASSERT_EQ(VolvoV60.getDirection(),false);
+    ASSERT_EQ(VolvoV60.getSpeed(),0);
+    ASSERT_EQ(VolvoV60.getTime(),0);
+}
+
 
 /*
 Tests:

@@ -94,7 +94,7 @@ Road::Road(size_t _roadID,Json::Value& object,ICityNetwork& City){
 
     //cars_on_lanes[0] is the outer lane
     //For Two-way roads cars_on_lanes[lanes+0] is the outer lane of the other way
-    cars_on_lanes=std::vector< std::set<std::shared_ptr<RoadVehicle>,CompareVehicleOnLane > >(oneWay ? lanes : lanes*2);
+    cars_on_lanes=std::vector< std::set< std::shared_ptr<RoadVehicle>,CompareVehicleOnLane > >(oneWay ? lanes : lanes*2);
 }
 
 //Get a reference to Node other than This, this is used by the Node when adding Road to verify that the Road they have been married to recognizes them AND for getting their neighbour for quick lookup
@@ -118,12 +118,114 @@ Road::~Road()
 
 }
 
-void Road::addVehicle(double /*time*/, int /*target_lane*/, bool /*direction*/,RoadVehicle& /*Vehicle*/)
+void Road::addVehicle(int target_lane, bool direction,std::shared_ptr<RoadVehicle> Vehicle,double time)
 {
-
- //   if (cars_on_lanes[target_lane].empty() || cars_on_lanes[target_lane].begin())
+    //Check errors in lane requested, and also get the ID on the list of lanes
+    if (target_lane>=lanes)
+        throw InvalidLane(roadID,target_lane,lanes);
+    if (direction)
     {
-   //     Vehicle
+        if (oneWay)
+            throw InvalidDirection(roadID);
+
+        target_lane+=lanes;
     }
+
+    const RoadVehicle* Next = getFirst_NOCHECK(target_lane);
+
+
+    if (Next!=nullptr && Vehicle->getLength()<Next->getPos())
+    {
+        throw CarCrashSpawn(*Vehicle,*Next);
+    }
+
+    //Ok now add the vehicle
+    cars_on_lanes[target_lane].insert(Vehicle);
+    Vehicle->enterRoad(this, direction, target_lane, time);
+
 }
 
+//For accessing vehicles on the road, get the vehicle directly in front of, or directly behind this position, return null if no vehicle present (including if lane/position does not exist)
+const RoadVehicle* Road::getNext(int lane, bool direction, double pos)
+{
+    if (lane>=lanes)
+        throw InvalidLane(roadID,lane,lanes);
+    if (direction)
+    {
+        if (oneWay)
+            throw InvalidDirection(roadID);
+
+        lane+=lanes;
+    }
+
+    return getNext_NOCHECK(lane,pos);
+}
+
+const RoadVehicle* Road::getPrev(int lane, bool direction, double pos)
+{
+    if (lane>=lanes)
+        throw InvalidLane(roadID,lane,lanes);
+    if (direction)
+    {
+        if (oneWay)
+            throw InvalidDirection(roadID);
+
+        lane+=lanes;
+    }
+
+    return getPrev_NOCHECK(lane,pos);
+}
+
+
+const RoadVehicle* Road::getFirst(int lane, bool direction)
+{
+    if (lane>=lanes)
+        throw InvalidLane(roadID,lane,lanes);
+    if (direction)
+    {
+        if (oneWay)
+            throw InvalidDirection(roadID);
+
+        lane+=lanes;
+    }
+
+    return getFirst_NOCHECK(lane);
+}
+
+const RoadVehicle* Road::getLast(int lane, bool direction)
+{
+    if (lane>=lanes)
+        throw InvalidLane(roadID,lane,lanes);
+    if (direction)
+    {
+        if (oneWay)
+            throw InvalidDirection(roadID);
+
+        lane+=lanes;
+    }
+
+    return getLast_NOCHECK(lane);
+}
+
+const inline RoadVehicle* Road::getNext_NOCHECK(int lane_address,double pos)
+{
+    std::shared_ptr<RoadVehicle> faux_vehicle=std::make_shared<RoadVehicle>(pos);
+
+    const auto Out_iterator = cars_on_lanes[lane_address].upper_bound(faux_vehicle);
+
+    //end() is used to indicate a failed search, if not failed the iterator points to a valid member of the set, and we can call get on the underlying shared pointer to get the pointer, which we cast to const.
+    return Out_iterator==  cars_on_lanes[lane_address].end() ? nullptr : static_cast<const RoadVehicle*>(Out_iterator->get());
+}
+
+const inline RoadVehicle* Road::getPrev_NOCHECK(int lane_address,double pos)
+{
+
+    std::shared_ptr<RoadVehicle> faux_vehicle=std::make_shared<RoadVehicle>(pos);
+
+    const auto Out_iterator = cars_on_lanes[lane_address].lower_bound(faux_vehicle);
+
+    //end() is used to indicate a failed search, if not failed the iterator points to a valid member of the set, and we can call get on the underlying shared pointer to get the pointer, which we cast to const.
+    return Out_iterator==  cars_on_lanes[lane_address].end() ? nullptr : static_cast<const RoadVehicle*>(Out_iterator->get());
+
+
+}

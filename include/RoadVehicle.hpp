@@ -60,6 +60,11 @@ protected:
     }
 
 public:
+    //A FAUX vehicle with a position, used only for comparison purposes (i.e. searching the std::set of vehicles in every lane by position)
+    RoadVehicle(double pos):current_state(0,nullptr,0,0,pos,false)
+    {
+        //Everything is null or default, this vehicle is UNUSABLE
+    }
 
     //@param _lenght length of vehicle in m
     //@max_speed highest speed vehicle can travel at
@@ -79,7 +84,7 @@ public:
     void setTime(double time);
     double gotoUpdate(double time) noexcept;//Same as the above, but goes exactly to the next scheduled update, returns the new time, does nothing if no new updates exist
 
-    //Drive onto this new road
+    //Drive onto this new road, We assume the road has already accepted us on this location
     //@param Road: what we enter, const, because the roads own the car, not the other way around
     //@param direction: do we drive from first to second node? or the other way around
     //@param lane: what lane do we enter on
@@ -124,4 +129,15 @@ public:
 
     //In particular used for collision detection: print current state as a string
     std::string toString()const;
+
+    bool operator<(const RoadVehicle& that) const
+    {
+        return current_state.pos<that.current_state.pos;
+    }
+
+    bool operator<(double pos ) const
+    {
+        return current_state.pos<pos;
+    }
+
 };
