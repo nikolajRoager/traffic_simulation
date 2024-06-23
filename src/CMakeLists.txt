@@ -7,6 +7,12 @@ add_library(Node Node.cpp)
 add_library(Hellhole Hellhole.cpp)
 add_library(CityNetwork CityNetwork.cpp)
 
+
+# Define the executable
+add_executable(test_lane_container main_test_Lane.cpp)
+target_include_directories(test_lane_container PRIVATE ../include)
+
+
 # Define the executable
 add_executable(trafficSimulation main.cpp)
 
