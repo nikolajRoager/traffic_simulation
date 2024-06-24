@@ -104,12 +104,12 @@ X satisfies *LegacyForwardIterator* if all following conditions are satisfied:
 
     for LegacyIterator:
         X satisfies DefaultConstructible.
-        The type X satisfies CopyConstructible, and
-        The type X satisfies CopyAssignable, and
-        The type X satisfies Destructible, and
-        lvalues of type X satisfy Swappable, and
-        std::iterator_traits<X> has member typedefs value_type(until C++20), difference_type, reference, pointer, and iterator_category
-    additionally for LegacyInputIterator:
+        The type X satisfies CopyConstructible,
+        The type X satisfies CopyAssignable,
+        The type X satisfies Destructible,
+        lvalues of type X satisfy Swappable,
+        std::iterator_traits<X> has member typedefs value_type(until C++20), difference_type, reference, pointer, and iterator_category (This is just a fancy way of saying that we need to write using difference_type = whatever in our class)
+    For LegacyInputIterator:
         X satisfies EqualityComparable.
     for LegacyForwardIterator:
         If X is a mutable iterator, R is a reference to T.
@@ -125,13 +125,17 @@ In addition, the following expressions must be valid, have the expected types an
 |Expression   |	Type                      |  Effects                       |
 |-------------|---------------------------|--------------------------------|
 | `*r`        | unspecified               | `r` is dereferenceable         |
-|`++r`        | `R`                       | `r` is incrementable (the behavior of the expression `++r` is defined)|
+| `++r`       | `X&`                      | `r` is incrementable           |
+| `X(j)`      |                           |  T(j) is equal to j, j is unchanged|
+| `i=j`       | `X&`                      |  i is equal to j, j is unchanged|
+| `i.~X()`    |                           |  All resources owned by i are reclaimed, no exceptions are thrown |
+| `i==j`      | convertible to `bool`     |  Equivalence relation          |
+| `using std::swap;swap(i,j)`|            |  Swaps values of i and j       |
 | `i!=j`      | convertible to `bool`     |Same as `!(i==j)`               |
 | `*i`        |`R`, convertible to `T`    |`i==j` then `*i==*j`            |
 | `i->m`      |                           |`(*i).m`                        |
-| `++r`       | `R`                       |                                |
-| `(void)r++` | Equivilent to `(void)++r` |                                |
-|`r++`        | convertible to `const X&` | Same as `X x=r; ++r; return x;`|
+| `(void)r++` | Equivalent to `(void)++r` |                                |
+| `r++`       | convertible to `const X&` | Same as `X x=r; ++r; return x;`|
 | `*r++`      | convertible to `R`        |                                |
 
 

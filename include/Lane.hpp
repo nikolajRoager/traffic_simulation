@@ -15,10 +15,20 @@ It is implemented as an AVL tree, with a double-linked-list connecting "adjacent
 #include <cstddef>//size_t
 #include <list>
 #include <ranges>
+#include <limits>
+#include <iterator>
+#include <utility>//std::swap
 
+
+#include <type_traits>
 
 //C++ 20 feature, for ensuring that the element has the require operation
 #include <concepts>
+
+
+#ifdef DEBUG_PRINT_ON_INSERT
+#include<iostream>
+#endif
 
 template <typename Elem>
 concept LaneElement = requires(Elem A, Elem B, double d){
@@ -41,172 +51,27 @@ concept LegacyInputIterator = requires(Iter it) {
 };
 
 
+
+
 size_t loading_counter=0;
 
 
 template<LaneElement T>
 class Lane
 {
-
+//Define these public types, which we will need for our private members, therefore our private members are defined at the very bottom
 public:
-    using value_type      = std::list<T>::value_type;//T;
+
+    using value_type      = T;
     using pointer_type    = T*;
-    using size_type       = std::list<T>::size_type;//size_t;
-    using difference_type = std::list<T>::difference_type;//size_t;
-    using reference       = std::list<T>::reference;// T&;
-    using const_reference = std::list<T>::const_reference;//const T&;
+    using size_type       = size_t;
+    using difference_type = std::ptrdiff_t;
+    using reference       = T&;
+    using const_reference = const T&;
 
-    //If we made everything from scratch, we would need to make our own iterator class
-    using iterator       = std::list<T>::iterator;
-    using const_iterator = std::list<T>::const_iterator;
+ //We need the Node, to define the iterator, so go into private mode
 
-
-
-//EVERYTHING BELOW ARE Requirements for CONTAINER (see https://en.cppreference.com/w/cpp/named_req/Container)
-    Lane(){;//default constructor
-
-    }
-
-    Lane(const Lane& a)
-    {
-        elements=a.elements;//invokes copy constructor
-    }
-
-    Lane(Lane&& a)
-    {
-        elements=std::move(a.elements);
-    }
-
-    Lane& operator=(const Lane& other)//copy assignment
-    {
-        elements=other.elements;//invokes copy constructor
-        return *this;
-    }
-    Lane& operator=(Lane&& other)//move assignment
-    {
-        elements=std::move(other.elements);
-        return *this;
-    }
-
-
-    //destructor
-    ~Lane()
-    {
-        delete head;
-    }//elements.~list<T>() is called by default
-
-    //iterator begin() {return elements.begin();}
-    //iterator end()   {return elements.end();}
-
-    //const const_iterator begin()const {return elements.begin();}
-    //const const_iterator end()  const {return elements.end();}
-
-    //three way comparison of iterator
-
-    bool operator==(const Lane<T>& b) const
-    {
-        return true;
-    }
-
-    bool operator!=(const Lane<T>& b) const
-    {
-        return !(operator==(b));
-    }
-
-    void swap(Lane<T>& b)
-    {
-        elements.swap(b.elements);
-    }
-
-    static void swap(Lane<T>& a,Lane<T>& b)
-    {
-        a.swap(b);
-    }
-
-    size_type size()
-    {
-        return elements.size();
-    }
-
-    size_type max_size()
-    {
-        return elements.max_size();
-    }
-    bool empty()
-    {
-        return elements.empty();
-    }
-
-//We only implement SOME Requirements for SEQUENCE CONTAINER (see https://en.cppreference.com/w/cpp/named_req/SequenceContainer), it doesn't make sense to implement all
-
-    Lane(size_type n, T t)
-    {
-        elements=std::list<T>(n,t);//Ok, they all have the same value, so this is sorted
-    }
-
-    //Accept any input iterators
-    template<LegacyInputIterator Iter>
-        Lane(Iter start, Iter end)
-        {
-            //elements=std::list<T>(start,end);//Ok, they all have the same value, so this is sorted
-            std::copy(start,end,std::back_inserter(*this)); //This is O(N log N) the same as std::sort
-        }
-    //Full disclosure, I could not get enough documentation to implement Lane(std::from_range, rg), thus this is NOT C++23 compatible
-
-    Lane(std::initializer_list<T> il):Lane(il.begin(),il.end()){}
-
-    Lane& operator =(std::initializer_list<T> il)
-    {
-        //Call the constructor on a fresh object
-        Lane that(il.begin(),il.end());
-
-        //now this is that and that is this
-        std::swap(*this,that);
-        return *this;
-        //as that goes out of scope, the old data is safely handled by the destructor
-    }
-
-    //Now the important ones, the actual insertions followed by sorting
-    //I name it push_back, to get a working std::back_inserter
-    void push_back(T t)
-    {
-        if (head==nullptr)
-        {
-            head     = new Node(std::move(t));
-            least    = head;
-            greatest = head;
-        }
-        else
-        {
-            head = head->insert(std::move(t),least,greatest);
-        }
-
-        std::cout<<"POST INSERT "<<t<<std::endl;
-        DEBUG_print_tree();
-    }
-
-    void DEBUG_print_tree() const
-    {
-        if (head==nullptr)
-            std::cout<<"Empty"<<std::endl;
-        else
-        {
-            std::cout<<"By tree:\n";
-            head->DEBUG_print();
-
-            std::cout<<"\nBy size: ";
-            for (const Node* N = least; N!=nullptr; N=N->next)
-                std::cout<<N->value<<' ';
-            std::cout<<std::endl;
-        }
-    }
-
-private:
-
-    //First version, we use a linked list behind the scenes, while enforcing a tree-structure for access and insertion
-    //The double linked list has easy access to next and previous elements, and a working iterator implementation
-    std::list<T> elements;
-
+ private:
     //We will also use a binary tree to search elements,
 
     struct Node{
@@ -250,6 +115,17 @@ private:
             --loading_counter;
         }
 
+        //Am I the same as this? in terms of subtree content and structure
+        bool is_same_subtree(const Node* that)const
+        {
+            //Short circuit logic = We make the most trivial comparisons first, if they fail we skip expensive calculations
+            return that!=nullptr && that->value==value//Same value, and that thing is not broken
+             && ((left==nullptr && that->left==nullptr) || (left!=nullptr && that->left !=nullptr && left->is_same_subtree(that->left)))//Left side is the same (both null, or the subtree is the same)
+            && ((right==nullptr && that->right==nullptr) || (right!=nullptr && that->right !=nullptr && right->is_same_subtree(that->right)));//Same with the right side
+            //Do not make the same kind of search of the next and previous, if the tree looks the same they are the same
+
+        }
+
 
         Node* insert(T&& val,Node*& least, Node*& greatest)
         {
@@ -272,7 +148,9 @@ private:
         //ASSUMES right is not nullptr and has balance factor 1, otherwise this would not be called
         Node* rotateLeft()
         {
+            #ifdef DEBUG_PRINT_ON_INSERT
             std::cout<<"R ON "<<value<<std::endl;
+            #endif
             Node* oldRight = right;
 
             Node* oldRightLeft = right->left;//may be null, doesn't matter
@@ -307,7 +185,9 @@ private:
         //Same but rotate right
         Node* rotateRight()
         {
+            #ifdef DEBUG_PRINT_ON_INSERT
             std::cout<<"R ON "<<value<<std::endl;
+            #endif
             Node* oldLeft = left;
 
             Node* oldLeftRight = left->right;//may be null, doesn't matter
@@ -343,7 +223,9 @@ private:
         //Same but rotate right-left
         Node* rotateRightLeft()
         {
+            #ifdef DEBUG_PRINT_ON_INSERT
             std::cout<<"RL ON "<<value<<std::endl;
+            #endif
             //If we get here this is valid
             Node* oldRight     = right;
             Node* oldRightLeft = right->left;
@@ -398,7 +280,9 @@ private:
         //Same but rotate left-right
         Node* rotateLeftRight()
         {
+            #ifdef DEBUG_PRINT_ON_INSERT
             std::cout<<"LR ON "<<value<<std::endl;
+            #endif
             //If we get here this is valid
             Node* oldLeft     = left;
             Node* oldLeftRight = left->right;
@@ -455,10 +339,12 @@ private:
             //First, perform standard BST insertion
             if (New->value < value)
             {
-                //pass through or insert here, if this is the closest lesser number it is my prev and I am your next
-                if (prev ==nullptr || New->value>prev->value)
+                if (left==nullptr)
                 {
+                    left=New;
+                    left->parent=this;
 
+                    //If this is inserted to our left, it is surely our new prev
 
                     Node* oldPrev = prev;
                     prev = New;
@@ -466,12 +352,7 @@ private:
                     //Insert the New one in-between
                     New->next = this;
                     New->prev = oldPrev;
-                }
-
-                if (left==nullptr)
-                {
-                    left=New;
-                    left->parent=this;
+                    if(nullptr!=oldPrev) oldPrev->next = New;
                 }
                 else
                     left=left->insert(New);
@@ -480,9 +361,12 @@ private:
             }
             else
             {
-                if (next ==nullptr || New->value < next->value)
-                {
 
+
+                if (right==nullptr)
+                {
+                    right=New;
+                    right->parent=this;
 
                     Node* oldNext = next;
                     next = New;
@@ -490,13 +374,7 @@ private:
                     //Insert the New one in-between
                     New->prev = this;
                     New->next = oldNext;
-                }
-
-
-                if (right==nullptr)
-                {
-                    right=New;
-                    right->parent=this;
+                    if (oldNext!=nullptr) oldNext->prev = New;
                 }
                 else
                     right = right->insert(New);
@@ -533,6 +411,7 @@ private:
         }
 
 
+        #ifdef DEBUG_PRINT_ON_INSERT
         void DEBUG_print(int indent=0) const
         {
             std::cout<<std::string(indent,' ')<<"{ val="<<value<<" height "<<height<<" balance : "<<balance_factor<<"\n"<<std::string(indent,' ')<<"left: ";
@@ -544,7 +423,310 @@ private:
 
             std::cout<<std::string(indent,' ')<<'}'<<std::endl;
         }
+        #endif
     };
+
+    class my_iterator
+    {
+
+    public:
+        //Look at design document for LaneContainer for exactly what requirements are needed
+
+        using difference_type = std::ptrdiff_t;
+        using value_type = T;//Not required since C++20
+        using reference= T&;
+        using const_reference= const T&;
+        using pointer= T*;
+        using const_pointer= const T*;
+        using iterator_category= std::forward_iterator_tag;
+    private:
+        Node* myNode=nullptr;//This is used as Lane.end(), since that is what we get if we use one too many ++
+    public:
+
+        reference  operator*()
+        {
+            return (myNode->value);
+        }
+
+        const_reference operator*() const
+        {
+            return (myNode->value);
+        }
+
+        pointer operator-> ()
+        {
+            return &(myNode->value);
+        }
+
+        const_pointer operator-> () const
+        {
+            return &(myNode->value);
+        }
+
+        my_iterator(Node* N=nullptr) noexcept {myNode=N;}//The nullptr node is the same as Lane.end()
+
+        void swap(my_iterator& it)
+        {
+            std::swap(myNode,it.myNode);
+        }
+
+        my_iterator& operator++()
+        {
+            if (myNode!=nullptr) myNode=myNode->next;
+            return *this;
+        }
+
+        my_iterator(const my_iterator& j)//copy constructor
+        {
+            myNode=j->myNode;
+        }
+
+        const my_iterator& operator=(const  my_iterator& j)//copy assignment
+        {
+            myNode=j->myNode;
+            return *this;
+        }
+
+        //move constructor and assignment, not required but good to have
+        my_iterator(my_iterator&& j)
+        {
+            myNode=j->myNode;
+            j->myNode=nullptr;
+        }
+
+        my_iterator& operator=(my_iterator&& j)
+        {
+            myNode=j->myNode;
+            j->myNode=nullptr;
+            return *this;
+        }
+
+        ~my_iterator()
+        {
+            //No delete, we don't own the pointer
+        }
+
+        bool operator==(const my_iterator& j) const
+        {
+            return j.myNode==myNode;
+        }
+
+        bool operator!=(const my_iterator& j) const
+        {
+            //equivilant !(*this==j)
+            return j.myNode!=myNode;
+        }
+
+        /*
+*r`
+++r`
+X(j)`
+i=j`
+i.~X()`
+i==j`
+using std::
+i!=j`
+*i`
+i->m`
+++r`
+(void)r++`
+r++`
+*r++`
+*/
+
+    };
+
+ public:
+
+
+
+
+    using iterator = my_iterator;
+    using const_iterator = const my_iterator;
+
+
+//EVERYTHING BELOW ARE Requirements for CONTAINER (see https://en.cppreference.com/w/cpp/named_req/Container)
+    Lane(){;//default constructor
+        head=nullptr;
+        least=nullptr;
+        greatest=nullptr;
+    }
+
+    //UNTESTED
+    Lane(const Lane<T>& a)
+    {
+        //A O(N) SOLUTION IS CLEARLY POSSIBLE: LOOP THROUGH ALL NODES AND COPY THE EXISTING STRUCTURE TO NEW NODES, USE A HASHTABLE TO MAP OLD TO NEW NODES
+        std::copy(a.begin(),a.end(),std::back_inserter(*this)); //This is O(N log N) the same as std::sort
+
+    }
+
+
+    //UNTESTED
+    Lane(Lane&& other)
+    {
+        head = other.head;
+        other.head=nullptr;
+        least=other.least;
+        other.least=nullptr;
+        greatest=other.greatest;
+        other.greatest=nullptr;
+    }
+
+    //UNTESTED
+    Lane& operator=(const Lane& other)//copy assignment
+    {
+        if (this!=&other)
+        {
+            //SAME COMMENT AS IN COPY CONSTRUCTOR
+            std::copy(other.begin(),other.end(),std::back_inserter(*this)); //This is O(N log N) the same as std::sort
+        }
+        return *this;
+    }
+
+    //UNTESTED
+    Lane& operator=(Lane&& other)//move assignment
+    {
+        if (this!=&other)
+        {
+            head = other.head;
+            other.head=nullptr;
+            least=other.least;
+            other.least=nullptr;
+            greatest=other.greatest;
+            other.greatest=nullptr;
+        }
+        return *this;
+    }
+
+
+    //destructor
+    ~Lane()
+    {
+        delete head;//Destructs everything
+    }
+
+    iterator begin() {return iterator(least);}
+    iterator end()   {return iterator(nullptr);}
+
+    const const_iterator begin()const {return iterator(least);}
+    const const_iterator end()  const {return iterator(nullptr);}
+
+    //UNTESTED, TEST WITH EMPTY, NON-EMPTY DIFFERENT STRUCTURE, NON-EMPTU SAME STRUCTURE DIFFERENT AND SAME VALUES
+    bool operator==(const Lane<T>& b) const
+    {
+        if (b.size()==size())
+        {
+            return (head==nullptr && b.head==nullptr) ||  (head!=nullptr && head->is_same_subtree(b.head));
+        }
+        else
+            return false;
+    }
+
+    //UNTESTED
+    bool operator!=(const Lane<T>& b) const
+    {
+        return !(operator==(b));
+    }
+
+    //UNTESTED
+    void swap(Lane<T>& b) noexcept
+    {
+        head = b.head;
+        b.head=nullptr;
+        least=b.least;
+        b.least=nullptr;
+        greatest=b.greatest;
+        b.greatest=nullptr;
+    }
+
+    //UNTESTED
+    static void swap(Lane<T>& a,Lane<T>& b)
+    {
+        a.swap(b);
+    }
+
+    //UNTESTED
+    size_type size()const
+    {
+        //BETTER ACTUALLY SAVE THIS NUMBER DURING INSERTS, TEST AGAINST THIS
+        return std::distance(begin(),end());
+    }
+
+    //UNTESTED (I do not want to check a Lane this big though)
+    size_type max_size()const
+    {
+        return std::numeric_limits<difference_type>::max();
+    }
+
+    //UNTESTED, TEST THAT size()==0 DOES THE SAME THING
+    bool empty()const
+    {
+        return head==nullptr;
+    }
+
+//We only implement SOME Requirements for SEQUENCE CONTAINER (see https://en.cppreference.com/w/cpp/named_req/SequenceContainer), it doesn't make sense to implement all
+
+    //Accept any input iterators
+    template<LegacyInputIterator Iter>
+        Lane(Iter start, Iter end)
+        {
+            std::copy(start,end,std::back_inserter(*this)); //This is O(N log N) the same as std::sort
+        }
+    //Full disclosure, I could not get enough documentation to implement Lane(std::from_range, rg), thus this is NOT C++23 compatible
+
+    Lane(std::initializer_list<T> il):Lane(il.begin(),il.end()){}
+
+    Lane& operator =(std::initializer_list<T> il)
+    {
+        //Call the constructor on a fresh object
+        Lane that(il.begin(),il.end());
+
+        //now this is that and that is this
+        std::swap(*this,that);
+        return *this;
+        //as that goes out of scope, the old data is safely handled by the destructor
+    }
+
+    //Now the important ones, the actual insertions followed by sorting
+    //I name it push_back, to get a working std::back_inserter
+    void push_back(T t)
+    {
+        if (head==nullptr)
+        {
+            head     = new Node(std::move(t));
+            least    = head;
+            greatest = head;
+        }
+        else
+        {
+            head = head->insert(std::move(t),least,greatest);
+        }
+
+        #ifdef DEBUG_PRINT_ON_INSERT
+        std::cout<<"AFTER POST INSERT "<<t<<std::endl;
+        DEBUG_print_tree();
+        #endif
+    }
+
+    #ifdef DEBUG_PRINT_ON_INSERT
+    void DEBUG_print_tree() const
+    {
+        if (head==nullptr)
+            std::cout<<"Empty"<<std::endl;
+        else
+        {
+            std::cout<<"By tree:\n";
+            head->DEBUG_print();
+
+            std::cout<<"\nBy size: ";
+            for (const Node* N = least; N!=nullptr; N=N->next)
+                std::cout<<N->value<<' ';
+            std::cout<<std::endl;
+        }
+    }
+    #endif
+
+private:
 
     //owned
     Node* head    =nullptr;
@@ -552,4 +734,21 @@ private:
     //Non-owned
     Node* least   =nullptr;
     Node* greatest=nullptr;
+
+
+    //Call basic static asserts, ensuring that our iterator is indeed an iterator
+    static_assert(std::is_copy_constructible_v<Lane<T>::iterator>);
+    static_assert(std::is_copy_assignable_v<Lane<T>::iterator>);
+    static_assert(std::is_destructible_v<Lane<T>::iterator>);
+    static_assert(std::is_swappable_v<Lane<T>::iterator>);
+    static_assert(std::is_default_constructible_v<Lane<T>::iterator>);
+
+    static_assert(std::is_same<typename std::iterator_traits<Lane<T>::iterator>::difference_type,std::ptrdiff_t>::value);
+    static_assert(std::is_same<typename std::iterator_traits<Lane<T>::iterator>::reference,T&>::value);
+    static_assert(std::is_same<typename std::iterator_traits<Lane<T>::iterator>::pointer, T*>::value);
+    static_assert(std::is_same<typename std::iterator_traits<Lane<T>::iterator>::pointer,T*>::value);
+    static_assert(std::is_same<typename std::iterator_traits<Lane<T>::iterator>::iterator_category,std::forward_iterator_tag>::value);
 };
+
+
+
