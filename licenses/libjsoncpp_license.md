@@ -21,7 +21,6 @@ described in clear, concise terms at:
    http://en.wikipedia.org/wiki/MIT_License
 
 The full text of the MIT License follows:
-
 ========================================================================
 Copyright (c) 2007-2010 Baptiste Lepilleur and The JsonCpp Authors
 
@@ -44,8 +43,9 @@ BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
 ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-========================================================================
+
 (END LICENSE TEXT)
+========================================================================
 
 The MIT license is compatible with both the GPL and commercial
 software, affording one all of the rights of Public Domain with the
