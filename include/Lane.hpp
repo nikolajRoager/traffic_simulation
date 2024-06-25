@@ -61,6 +61,10 @@ concept LegacyInputIterator = requires(Iter it) {
 
 
 #ifdef DEBUG_loading_counter
+
+//idk if this debugging option will be used in a multithreaded context, but I assume so
+#include<mutex>
+std::mutex loading_counter_lock;
 size_t loading_counter=0;
 #endif
 
@@ -134,7 +138,9 @@ public:
         Node(T val, Node* p=nullptr)
         {
             #ifdef DEBUG_loading_counter
+            loading_counter_lock.lock();
             ++loading_counter;
+            loading_counter_lock.unlock();
             #endif
 
             height=1;
@@ -155,7 +161,9 @@ public:
             delete right;
 
             #ifdef DEBUG_loading_counter
+            loading_counter_lock.lock();
             --loading_counter;
+            loading_counter_lock.unlock();
             #endif
         }
 
@@ -578,10 +586,9 @@ public:
         head=nullptr;
         least=nullptr;
         greatest=nullptr;
-        mySize==0;
+        mySize=0;
     }
 
-    //UNTESTED
     Lane(const Lane<T>& other) noexcept
     {
         mySize=other.mySize;
@@ -699,7 +706,6 @@ public:
     }
 
 
-    //UNTESTED
     Lane(Lane&& other) noexcept
     {
 
@@ -713,114 +719,119 @@ public:
         other.greatest=nullptr;
     }
 
-    //UNTESTED
     Lane& operator=(const Lane& other) noexcept//copy assignment
     {
 
-        mySize=other.mySize;
-
-        if (this!=&other)
+        if (this!=&other)//This would result in a double-free
         {
-            if (other.head==nullptr)
-            {
-                head=nullptr;
-                least=nullptr;//If head is null, the others should be null as well
-                greatest=nullptr;
-            }
-            else
-            {
-                //Hashtable lookup for easy access of which new nodes in my tree, correspond to nodes in the old tree
-                std::unordered_map<const Node*,Node*> Node_lookup;
 
-                for (Node* N = other.least; N!=nullptr; N=N->next)
+            this->~Lane();
+
+            mySize=other.mySize;
+
+            if (this!=&other)
+            {
+                if (other.head==nullptr)
                 {
-                    Node* my_N;
+                    head=nullptr;
+                    least=nullptr;//If head is null, the others should be null as well
+                    greatest=nullptr;
+                }
+                else
+                {
+                    //Hashtable lookup for easy access of which new nodes in my tree, correspond to nodes in the old tree
+                    std::unordered_map<const Node*,Node*> Node_lookup;
 
-                    //Check if this Node has already been initialized in the new tree, if not make it, and put it in the table
-                    auto it = Node_lookup.find(N);
-                    if (it == Node_lookup.end())
+                    for (Node* N = other.least; N!=nullptr; N=N->next)
                     {
-                        my_N=new Node(N->value);
-                        Node_lookup[N]=my_N;
-                    }
-                    else
-                        my_N=it->second;
+                        Node* my_N;
 
-                    //Copy the value into this new Node
-                    my_N->value=N->value;
-                    my_N->height=N->height;
-                    my_N->balance_factor=N->balance_factor;
+                        //Check if this Node has already been initialized in the new tree, if not make it, and put it in the table
+                        auto it = Node_lookup.find(N);
+                        if (it == Node_lookup.end())
+                        {
+                            my_N=new Node(N->value);
+                            Node_lookup[N]=my_N;
+                        }
+                        else
+                            my_N=it->second;
 
-                    //Check all Nodes connected to this, if they don't already exist, make them, no need to bother about their individual values, we will either get to them later, or have already been there
+                        //Copy the value into this new Node
+                        my_N->value=N->value;
+                        my_N->height=N->height;
+                        my_N->balance_factor=N->balance_factor;
 
-                    if (N->left==nullptr)
-                        my_N->left=nullptr;
-                    else
-                    {
-                        it = Node_lookup.find(N->left);
-                        if (it == Node_lookup.end())
+                        //Check all Nodes connected to this, if they don't already exist, make them, no need to bother about their individual values, we will either get to them later, or have already been there
+
+                        if (N->left==nullptr)
+                            my_N->left=nullptr;
+                        else
                         {
-                            my_N->left=new Node(N->left->value);
-                            Node_lookup[N->left]=my_N->left;
+                            it = Node_lookup.find(N->left);
+                            if (it == Node_lookup.end())
+                            {
+                                my_N->left=new Node(N->left->value);
+                                Node_lookup[N->left]=my_N->left;
+                            }
+                            else
+                                my_N->left=it->second;
+                        }
+                        if (N->right==nullptr)
+                            my_N->right=nullptr;
+                        else
+                        {
+                            it = Node_lookup.find(N->right);
+                            if (it == Node_lookup.end())
+                            {
+                                my_N->right=new Node(N->right->value);
+                                Node_lookup[N->right]=my_N->right;
+                            }
+                            else
+                                my_N->right=it->second;
+                        }
+                        if (N->prev==nullptr)
+                            my_N->prev=nullptr;
+                        else
+                        {
+                            //This one is guaranteed to exist, since we started from the least
+                            it = Node_lookup.find(N->prev);
+                            if (it == Node_lookup.end())
+                            {
+                                my_N->prev=new Node(N->prev->value);
+                                Node_lookup[N->prev]=my_N->prev;
+                            }
+                            else
+                                my_N->prev=it->second;
+                        }
+                        if (N->next==nullptr)
+                            my_N->next=nullptr;
+                        else
+                        {
+                            it = Node_lookup.find(N->next);
+                            if (it == Node_lookup.end())
+                            {
+                                my_N->next=new Node(N->next->value);
+                                Node_lookup[N->next]=my_N->next;
+                            }
+                            else
+                                my_N->next=it->second;
+                        }
+                        if (N->parent==nullptr)
+                        {
+                            my_N->parent=nullptr;
+                            head=my_N;//This is the head
                         }
                         else
-                            my_N->left=it->second;
-                    }
-                    if (N->right==nullptr)
-                        my_N->right=nullptr;
-                    else
-                    {
-                        it = Node_lookup.find(N->right);
-                        if (it == Node_lookup.end())
                         {
-                            my_N->right=new Node(N->right->value);
-                            Node_lookup[N->right]=my_N->right;
+                            it = Node_lookup.find(N->parent);
+                            if (it == Node_lookup.end())
+                            {
+                                my_N->parent=new Node(N->parent->value);
+                                Node_lookup[N->parent]=my_N->parent;
+                            }
+                            else
+                                my_N->parent=it->second;
                         }
-                        else
-                            my_N->right=it->second;
-                    }
-                    if (N->prev==nullptr)
-                        my_N->prev=nullptr;
-                    else
-                    {
-                        //This one is guaranteed to exist, since we started from the least
-                        it = Node_lookup.find(N->prev);
-                        if (it == Node_lookup.end())
-                        {
-                            my_N->prev=new Node(N->prev->value);
-                            Node_lookup[N->prev]=my_N->prev;
-                        }
-                        else
-                            my_N->prev=it->second;
-                    }
-                    if (N->next==nullptr)
-                        my_N->next=nullptr;
-                    else
-                    {
-                        it = Node_lookup.find(N->next);
-                        if (it == Node_lookup.end())
-                        {
-                            my_N->next=new Node(N->next->value);
-                            Node_lookup[N->next]=my_N->next;
-                        }
-                        else
-                            my_N->next=it->second;
-                    }
-                    if (N->parent==nullptr)
-                    {
-                        my_N->parent=nullptr;
-                        head=my_N;//This is the head
-                    }
-                    else
-                    {
-                        it = Node_lookup.find(N->parent);
-                        if (it == Node_lookup.end())
-                        {
-                            my_N->parent=new Node(N->parent->value);
-                            Node_lookup[N->parent]=my_N->parent;
-                        }
-                        else
-                            my_N->parent=it->second;
                     }
                 }
             }
@@ -828,18 +839,22 @@ public:
         return *this;
     }
 
-    //UNTESTED
     Lane& operator=(Lane&& other) noexcept//move assignment
     {
+
+
         if (this!=&other)
         {
+            this->~Lane();
+
+
             head = other.head;
-            other.head=nullptr;
             least=other.least;
-            other.least=nullptr;
             greatest=other.greatest;
-            other.greatest=nullptr;
             mySize=other.mySize;
+            other.head=nullptr;
+            other.least=nullptr;
+            other.greatest=nullptr;
         }
         return *this;
     }
@@ -857,8 +872,27 @@ public:
     const const_iterator begin()const noexcept {return iterator(least);}
     const const_iterator end()  const noexcept {return iterator(nullptr);}
 
-    //UNTESTED, TEST WITH EMPTY, NON-EMPTY DIFFERENT STRUCTURE, NON-EMPTU SAME STRUCTURE DIFFERENT AND SAME VALUES
+    //As per the C++ standard https://en.cppreference.com/w/cpp/named_req/Container this returns TRUE if the container contains the SAME ELEMENTS, in the SAME ORDER.
+    //It is possible that this and b have DIFFERENT internal tree-structure but still return true
     bool operator==(const Lane<T>& b) const noexcept
+    {
+        if (b.size()==size())
+        {
+            return std::equal(begin(),end(),b.begin());
+
+        }
+        else
+            return false;
+    }
+
+    bool operator!=(const Lane<T>& b) const noexcept
+    {
+        return !(operator==(b));
+    }
+
+
+    //This much stricter search requires the same structure, the C++ standard says this is TOO strict for the == operator, but this could still be useful
+    bool strict_equal(const Lane<T>& b) const noexcept
     {
         if (b.size()==size())
         {
@@ -868,44 +902,34 @@ public:
             return false;
     }
 
-    //UNTESTED
-    bool operator!=(const Lane<T>& b) const noexcept
-    {
-        return !(operator==(b));
-    }
 
-    //UNTESTED
+
+
     void swap(Lane<T>& b) noexcept
     {
-        head = b.head;
-        b.head=nullptr;
-        least=b.least;
-        b.least=nullptr;
-        greatest=b.greatest;
-        b.greatest=nullptr;
-        mySize=b.mySize;
+        //No need to reinvent what already exists
+        std::swap(head,b.head);
+        std::swap(least,b.least);
+        std::swap(greatest,b.greatest);
+        std::swap(mySize,b.mySize);
     }
 
-    //UNTESTED
     static void swap(Lane<T>& a,Lane<T>& b) noexcept
     {
         a.swap(b);
     }
 
-    //UNTESTED
     size_type size()const noexcept
     {
         //Should equal std::distance(begin(),end());
         return mySize;
     }
 
-    //UNTESTED (I do not want to check a Lane this big though)
     size_type max_size()const noexcept
     {
-        return std::numeric_limits<difference_type>::max();
+        return std::numeric_limits<size_type>::max();
     }
 
-    //UNTESTED, TEST THAT size()==0 DOES THE SAME THING
     bool empty()const noexcept
     {
         return head==nullptr;
@@ -997,8 +1021,6 @@ public:
         iterator lower_bound(double t)noexcept;
         iterator upper_bound(T t)noexcept;
         iterator upper_bound(double t)noexcept;
-
-    Const versions also exists
 
         const_iterator find(const T& t) const noexcept;
         const_iterator find(double t) const noexcept;

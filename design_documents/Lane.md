@@ -59,7 +59,7 @@ The flag:
 
     #define DEBUG_loading_counter
 
-Enables the `size_t loading_counter`, which counts how many internal node structs are currently loaded, providing a crude way of checking for memory leak.
+Enables the `size_t loading_counter`, which counts how many internal node structs are currently loaded, providing a crude way of checking for memory leak. Also enables `std::mutex loading_counter_lock;` used to make any debugging and tests thread-safe.
 
 Member functions and typedefs
 -----
@@ -83,6 +83,12 @@ The tree has a custom iterator for stepping through the tree from lowest to smal
     size_type size() const noexcept;
     size_type max_size() const noexcept;
     bool empty() const noexcept;
+
+Be aware that `==` (and by extension `!=`), as per the requirements checks that: the size is the same, and the elements between `begin()` and `end()` are the same. Another function exists which also checks that the tree structure is the same:
+
+    bool strict_equal(const Lane<T>& Other) const;
+
+Since AVL trees are not unique, it is possible to have to Lanes `a==b` be true but `a.strict_equal(b)` be false. This is unlikely to have any effects on anything
 
 To fulfill the requirements, the following types have been defined:
 
