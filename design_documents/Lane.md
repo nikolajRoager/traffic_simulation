@@ -1,8 +1,12 @@
 A custom container for storing vehicles on a road in sorted order
 ============
+A Lane mainly functions as a single ended queue but random insertion and deletion is allowed, the elements T have an ordering operator against other T and against double pos, (the two ordering operators are transitive with each other)
 
+Elements are looked up, based on either other elements, or the double they are equal to.
 
-no default container really works well in this case, std::set comes close ... but I do not trust it to always work when the sorting key changes.
+It is legal for elements to change what double they compare to, even outside control of the lane, a function `bool is_still_sorted()` exist for checking if the ordering has been altered.
+
+All other functions assumes that `is_still_sorted()` has been verified true, or that no alterations have been made. The container DOES NOT verify this automatically, and running any functions on a Lane where `is_still_sorted()==false` will result in undefined behaviour.
 
 This container will only be used for the RoadVehicle class, but will work for anything T, with a < operator for T and double
 
