@@ -722,6 +722,8 @@ public:
     Lane& operator=(const Lane& other) noexcept//copy assignment
     {
 
+
+
         if (this!=&other)//This would result in a double-free
         {
 
@@ -729,7 +731,6 @@ public:
 
             mySize=other.mySize;
 
-            if (this!=&other)
             {
                 if (other.head==nullptr)
                 {
@@ -833,6 +834,9 @@ public:
                                 my_N->parent=it->second;
                         }
                     }
+                    //If other was a valid Lane, these should already exist and be non-null
+                    least   = Node_lookup[other.least];
+                    greatest= Node_lookup[other.greatest];
                 }
             }
         }
@@ -846,7 +850,6 @@ public:
         if (this!=&other)
         {
             this->~Lane();
-
 
             head = other.head;
             least=other.least;
@@ -879,10 +882,11 @@ public:
         if (b.size()==size())
         {
             return std::equal(begin(),end(),b.begin());
-
         }
         else
+        {
             return false;
+        }
     }
 
     bool operator!=(const Lane<T>& b) const noexcept
@@ -896,7 +900,7 @@ public:
     {
         if (b.size()==size())
         {
-            return (head==nullptr && b.head==nullptr) ||  (head!=nullptr && head->is_same_subtree(b.head));
+            return (head==nullptr && b.head==nullptr) ||  (head!=nullptr && head->is_same_subtree(b.head)) && least->value == b.least->value && greatest->value == b.greatest->value;
         }
         else
             return false;

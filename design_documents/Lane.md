@@ -1,3 +1,5 @@
+
+
 A custom container for storing vehicles on a road in sorted order
 ============
 A Lane mainly functions as a single ended queue but random insertion and deletion is allowed, the elements T have an ordering operator against other T and against double pos, (the two ordering operators are transitive with each other)
@@ -12,7 +14,7 @@ This container will only be used for the RoadVehicle class, but will work for an
 
 Prerequisites
 -------
-This must be a fully functioning C++ container, compatible with all algorithms in the \<algorithm\> header (it will not be a sequence container, since the order of insertion fundamentally does not matter)
+This must be a fully functioning C++ container, compatible with all algorithms in the `<algorithm>` header (which take container arguments). It will not be a sequence container, since the order of insertion fundamentally does not matter.
 
 The pre-requisite for this container is that vehicles are sorted based on position.
 position must be between 0 and length.
@@ -130,13 +132,15 @@ The following finding functions all return `Lane<T>end()` for not found member, 
 
 Const versions also exists
 
+
+````c++
     const_iterator find(const T& t) const noexcept;
     const_iterator find(double t) const noexcept;
     const_iterator lower_bound(T t) const noexcept;
     const_iterator lower_bound(double t) const noexcept;
     const_iterator upper_bound(T t) const noexcept;
     const_iterator upper_bound(double t) const noexcept;
-
+```
 
 The underlying linked list structure provides a function for checking if everything is still sorted:
 
@@ -198,7 +202,7 @@ In addition, the following expressions must be valid, have the expected types an
 | `i=j`       | `X&`                      |  i is equal to j, j is unchanged|
 | `i.~X()`    |                           |  All resources owned by i are reclaimed, no exceptions are thrown |
 | `i==j`      | convertible to `bool`     |  Equivalence relation          |
-| `using std::swap;swap(i,j)`|            |  Swaps values of i and j       |
+| `using std::swap; swap(i,j)`|            |  Swaps values of i and j       |
 | `i!=j`      | convertible to `bool`     |Same as `!(i==j)`               |
 | `*i`        |`R`, convertible to `T`    |`i==j` then `*i==*j`            |
 | `i->m`      |                           |`(*i).m`                        |
@@ -211,3 +215,13 @@ In addition, the following expressions must be valid, have the expected types an
 
 
 [cpprforward]:  https://en.cppreference.com/w/cpp/named_req/ForwardIterator "Cppreference, Forward Iterator"
+
+
+
+TO BE DONE
+=======
+CONVERT ALL FUNCTIONS IN THIS DOCUMENT TO A TABLE
+
+INCLUDE MORE REFERENCES TO CPPREFERENCE
+
+CONSIDER IMPLEMENTING ASSOCIATIVE CONTAINER

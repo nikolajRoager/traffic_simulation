@@ -50,7 +50,8 @@ TYPED_TEST(LaneFundamentalTypeTest , testLane_memory_after_constructors) {
         typename TestFixture::TestClass thisLane({1,0,2,3,4,5,6,7});
         typename TestFixture::TestClass thatLane(thisLane);
 
-        thisLane_is_thatLane_after_copy =thisLane == thatLane;
+
+        thisLane_is_thatLane_after_copy = (thisLane == thatLane);
 
         //Test move constructor
         typename TestFixture::TestClass ExtraLane(std::move(thisLane));
@@ -89,6 +90,7 @@ global_loading_counter_test_lock.lock();
     {
         typename TestFixture::TestClass thisLane({1,0,2,3,4,5,6,7});
         typename TestFixture::TestClass DifferentLane({1,0,2});
+
         Was_different_before_copy = (thisLane!=DifferentLane);
 
         //Test copy assignment, on top of SOMETHING WHICH ALREADY EXISTS
@@ -109,7 +111,7 @@ global_loading_counter_test_lock.lock();
             //But move the data out of this copy
             typename TestFixture::TestClass DifferentLane(thatLane);
 
-            Was_different_before_move = (thisLane!=DifferentLane);
+            Was_different_before_move=(thisLane!=DifferentLane);
             thisLane=std::move(DifferentLane);
             Was_same_after_move = (thisLane==thatLane);
 
