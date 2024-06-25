@@ -32,28 +32,57 @@ The AVL tree is a perfectly ordinary AVL tree, which uses left/right rotations, 
 
 The linked list is updated on insertion and deletion of elements, and links elements in order of value.
 
+
+Optional debug flags
+-------
+The following flags can be set BEFORE including the header file, to give additional information (and degrade performance):
+
+
+    #define DEBUG_PRINT_ENABLE
+
+Makes available the `void Lane<T>::DEBUG_print_tree() const noexcept` function, which prints the underlying tree structure. For this to work, `T` need to be convertible to `std::string`, if it is not, you can define your own conversion function by defining this anywhere in your file, where `myClass` is your specific class:
+
+
+    template <>
+        std::string inline my_to_string<myClass>(const myClass& t)
+        {
+            return /*Custom function for printing*/
+        }
+
+Additionally, the flag:
+
+    #define DEBUG_PRINT_ON_INSERT
+
+Automatically enables `DEBUG_PRINT_ENABLE`. It prints the tree every time an element is inserted, it also prints whenever any rotation is called during insert into the AVL tree.
+
+The flag:
+
+    #define DEBUG_loading_counter
+
+Enables the `size_t loading_counter`, which counts how many internal node structs are currently loaded, providing a crude way of checking for memory leak.
+
 Member functions and typedefs
 -----
 The tree has a custom iterator for stepping through the tree from lowest to smallest, it implements all requirements for containers: These work exactly the way they are required for a container (plus some extra from SequenceContainter and Associative container):
 
-
-    Lane();
-    Lane(const Lane& other);
-    Lane(Lane&& other);
-    Lane& operator=(const Lane& other);//O(N) copy
-    Lane& operator=(Lane&& other);
-    ~Lane();
-    Lane::iterator begin();
-    Lane::iterator end();
-    const Lane::const_iterator begin()const;
-    const Lane::const_iterator end()  const;
-    bool operator==(const Lane<T>& other);
-    bool operator!=(const Lane<T>& other);
-    void swap(Lane<T>& other);
-    static void swap(Lane<T>& a,Lane<T>& b);
-    size_type size();
-    size_type max_size();
-    bool empty();
+    Lane() noexcept;
+    Lane(const Lane& other) noexcept;
+    Lane(Lane&& other) noexcept;
+    Lane& operator=(const Lane& other) noexcept;//O(N) copy constructor
+    Lane& operator=(Lane&& other) noexcept;
+    Lane(Iter start, Iter end);
+    ~Lane() noexcept;
+    Lane::iterator begin() noexcept;
+    Lane::iterator end() noexcept;
+    const Lane::const_iterator begin()const noexcept;
+    const Lane::const_iterator end()  const noexcept;
+    bool operator==(const Lane<T>& other) const noexcept;
+    bool operator!=(const Lane<T>& other) const noexcept;
+    void swap(Lane<T>& other) noexcept;
+    static void swap(Lane<T>& a,Lane<T>& b) noexcept;
+    size_type size() const noexcept;
+    size_type max_size() const noexcept;
+    bool empty() const noexcept;
 
 To fulfill the requirements, the following types have been defined:
 
@@ -66,17 +95,21 @@ To fulfill the requirements, the following types have been defined:
     Lane<T>::iterator        = my_iterator;//custom LegacyForwardIterator
     Lane<T>::const_iterator  = const my_iterator;
 
-Additionally this constructor copies from any other container in O(N log(N)):
+Additionally these constructors can copy any other container in O(N log(N)):
 
     template<LegacyInputIterator Iter>//Accepts any input iterator
         Lane(Iter start, Iter end);
+    Lane(std::initializer_list<T> il);
+    Lane& operator=(std::initializer_list<T> il);
 
 
 
-These functions are provided by accessing the underlying AVL-tree, these should run in time O(log(N)):
+These functions are provided by accessing the underlying AVL-tree, these should run in time O(log(N)) (but only if `DEBUG_PRINT_ON_INSERT` is disabled):
 
     void insert(T&& t);
     void push_back(T t);//Same as insert, used for the std::back_inserter to work
+    void erase(iterator i);
+    void erase(const T& t);//same as erase(find(t);
     size_type count(double t)noexcept;
     size_type count(const T& t)noexcept;
 
@@ -88,6 +121,16 @@ The following finding functions all return `Lane<T>end()` for not found member, 
     iterator lower_bound(double t)noexcept;
     iterator upper_bound(T t)noexcept;
     iterator upper_bound(double t)noexcept;
+
+Const versions also exists
+
+    const_iterator find(const T& t) const noexcept;
+    const_iterator find(double t) const noexcept;
+    const_iterator lower_bound(T t) const noexcept;
+    const_iterator lower_bound(double t) const noexcept;
+    const_iterator upper_bound(T t) const noexcept;
+    const_iterator upper_bound(double t) const noexcept;
+
 
 The underlying linked list structure provides a function for checking if everything is still sorted:
 

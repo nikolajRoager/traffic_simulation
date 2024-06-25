@@ -5,12 +5,10 @@ find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
 # Define the test executable
-add_executable(Test test.cpp Test_Loading.cpp Test_Vehicle.cpp )
+add_executable(Test test.cpp Test_Loading.cpp Test_Vehicle.cpp Test_Lane.cpp)
 
 # Include directories
 target_include_directories(Test PRIVATE ../include)
-
-
 
 # Link to gtest framework
 target_link_libraries(Test ${GTEST_LIBRARIES} pthread )

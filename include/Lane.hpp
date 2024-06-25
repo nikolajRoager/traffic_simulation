@@ -1,19 +1,21 @@
-/*A Lane mainly functions as a single ended queue but random insertion and deletion is allowed, the elements T have a sorting operator against other T and against double pos, (the two ordering operators are transitive with each other)
+#pragma once
+/*
+A Lane mainly functions as a single ended queue but random insertion and deletion is allowed, the elements T have an ordering operator against other T and against double pos, (the two ordering operators are transitive with each other)
 
 Elements are looked up, based on either other elements, or the double they are equal to.
 
-It is legal for elements to change what double they compare to, even outside control of the lane, but it is implicitly assumed that elements don't change their order
+It is legal for elements to change what double they compare to, even outside control of the lane, a function `bool is_still_sorted()` exist for checking if the ordering has been altered.
 
-This implements the requirements for Container, but only SOME requirements for SequenceContainer, many things, such as insert, swap and emplace at an iterator does not make sense for a sorted container
+All other functions assumes that `is_still_sorted()` has been verified true, or that no alterations have been made. The container DOES NOT verify this automatically, and running any functions on a Lane where `is_still_sorted()==false` will result in undefined behaviour.
 
-It is not a fully fledged Associative container either ... it is doing its own thing
+This container will only be used for the RoadVehicle class, but will work for anything T, with a < operator for T and double
 
-
-It is implemented as an AVL tree, with a double-linked-list connecting "adjacent" nodes
+This is a modified AVL tree, modified for O(1) lookup of adjacent element.
 */
 
 #include <cstddef>//size_t
 #include <list>
+#include <unordered_map>
 #include <ranges>
 #include <limits>
 #include <iterator>
@@ -25,9 +27,15 @@ It is implemented as an AVL tree, with a double-linked-list connecting "adjacent
 //C++ 20 feature, for ensuring that the element has the require operation
 #include <concepts>
 
-
 #ifdef DEBUG_PRINT_ON_INSERT
+#define DEBUG_PRINT_ENABLE
+#endif
+
+#ifdef DEBUG_PRINT_ENABLE
 #include<iostream>
+
+
+
 #endif
 
 template <typename Elem>
@@ -52,8 +60,41 @@ concept LegacyInputIterator = requires(Iter it) {
 
 
 
-
+#ifdef DEBUG_loading_counter
 size_t loading_counter=0;
+#endif
+
+
+#ifdef DEBUG_PRINT_ENABLE
+
+template <typename Elem>
+concept DebugPrintable_LaneElement = requires(Elem A, Elem B, double d){
+    {A<B} -> std::convertible_to<bool>;
+    {A<d} -> std::convertible_to<bool>;
+    {Elem::toString()} ->std::convertible_to<bool>;
+};
+
+
+
+//to_string will
+template <LaneElement T>
+    std::string inline my_to_string(const T& t)
+    {
+        //std::to_string works with all arithmetic types (integers or floating point), chars should just be printed
+        if constexpr(std::is_same_v<T,char>)
+            return std::string(1,t);
+        else if constexpr(std::is_arithmetic_v<T>)
+            return std::to_string(t);
+        else
+        {
+            //Debug print should not be used in this case
+            return "UNPRINTABLE";
+        }
+    }
+
+
+
+#endif
 
 
 template<LaneElement T>
@@ -69,11 +110,9 @@ public:
     using reference       = T&;
     using const_reference = const T&;
 
- //We need the Node, to define the iterator, so go into private mode
-
+ //We need the Node class, before we can make our iterator, so go into private mode and define that
  private:
     //We will also use a binary tree to search elements,
-
     struct Node{
         T value;
 
@@ -94,7 +133,10 @@ public:
 
         Node(T val, Node* p=nullptr)
         {
+            #ifdef DEBUG_loading_counter
             ++loading_counter;
+            #endif
+
             height=1;
             value = std::move(val);
             left=nullptr;
@@ -112,7 +154,9 @@ public:
             delete left;
             delete right;
 
+            #ifdef DEBUG_loading_counter
             --loading_counter;
+            #endif
         }
 
         //Am I the same as this? in terms of subtree content and structure
@@ -127,7 +171,7 @@ public:
         }
 
 
-        Node* insert(T&& val,Node*& least, Node*& greatest)
+        Node* insert(T&& val,Node*& least, Node*& greatest,size_type& mySize)
         {
             Node* New = new Node(std::move(val),this);
             if (least==nullptr   || least->value>New->value)
@@ -141,7 +185,7 @@ public:
 
 
 
-            return insert(New);
+            return insert(New,mySize);
         }
 
         //Returns new head of this subtree
@@ -149,7 +193,7 @@ public:
         Node* rotateLeft()
         {
             #ifdef DEBUG_PRINT_ON_INSERT
-            std::cout<<"R ON "<<value<<std::endl;
+            std::cout<<"R ON "<<my_to_string(value)<<std::endl;
             #endif
             Node* oldRight = right;
 
@@ -162,6 +206,7 @@ public:
 
             //Move this onto old right
             oldRight->left = this;
+            oldRight->parent= parent;
             parent = oldRight;
 
             if (oldRight->balance_factor==0)
@@ -186,7 +231,7 @@ public:
         Node* rotateRight()
         {
             #ifdef DEBUG_PRINT_ON_INSERT
-            std::cout<<"R ON "<<value<<std::endl;
+            std::cout<<"R ON "<<my_to_string(value)<<std::endl;
             #endif
             Node* oldLeft = left;
 
@@ -199,6 +244,7 @@ public:
 
             //Move this onto old left
             oldLeft->right = this;
+            oldLeft->parent= parent;
             parent = oldLeft;
 
             if (oldLeft->balance_factor==0)
@@ -224,7 +270,7 @@ public:
         Node* rotateRightLeft()
         {
             #ifdef DEBUG_PRINT_ON_INSERT
-            std::cout<<"RL ON "<<value<<std::endl;
+            std::cout<<"RL ON "<<my_to_string(value)<<std::endl;
             #endif
             //If we get here this is valid
             Node* oldRight     = right;
@@ -281,7 +327,7 @@ public:
         Node* rotateLeftRight()
         {
             #ifdef DEBUG_PRINT_ON_INSERT
-            std::cout<<"LR ON "<<value<<std::endl;
+            std::cout<<"LR ON "<<my_to_string(value)<<std::endl;
             #endif
             //If we get here this is valid
             Node* oldLeft     = left;
@@ -329,7 +375,7 @@ public:
 
 
         //Returns new head of this subtree
-        Node* insert(Node* New)
+        Node* insert(Node* New,size_type& mySize)
         {
             //Whether this pass through, or is inserted, it may be the next or prev neighbour
 
@@ -343,6 +389,7 @@ public:
                 {
                     left=New;
                     left->parent=this;
+                    ++mySize;
 
                     //If this is inserted to our left, it is surely our new prev
 
@@ -355,11 +402,11 @@ public:
                     if(nullptr!=oldPrev) oldPrev->next = New;
                 }
                 else
-                    left=left->insert(New);
+                    left=left->insert(New,mySize);
                 height=std::max(left->height+1,height);
 
             }
-            else
+            else// if ((value<New->value)) put this back to not allow dublicate values
             {
 
 
@@ -367,6 +414,7 @@ public:
                 {
                     right=New;
                     right->parent=this;
+                    ++mySize;
 
                     Node* oldNext = next;
                     next = New;
@@ -377,11 +425,16 @@ public:
                     if (oldNext!=nullptr) oldNext->prev = New;
                 }
                 else
-                    right = right->insert(New);
+                    right = right->insert(New,mySize);
                 height=std::max(right->height+1,height);
 
 
             }
+            //else//Put this back to have dublicate values OVERWRITE existing
+            //{
+            //    value=New->value;
+            //    delete New;
+            //}
 
             size_type hr = (right == nullptr ? 0 : right->height);
             size_type hl = (left == nullptr ? 0 : left->height);
@@ -406,15 +459,12 @@ public:
             }
             else
                 return this;//balanced
-
-
         }
 
-
-        #ifdef DEBUG_PRINT_ON_INSERT
-        void DEBUG_print(int indent=0) const
+        #ifdef DEBUG_PRINT_ENABLE
+        void DEBUG_print(int indent=0) const noexcept
         {
-            std::cout<<std::string(indent,' ')<<"{ val="<<value<<" height "<<height<<" balance : "<<balance_factor<<"\n"<<std::string(indent,' ')<<"left: ";
+            std::cout<<std::string(indent,' ')<<"{ val="<<my_to_string(value)<<" height "<<height<<" balance : "<<balance_factor<<" parent "<<(parent==nullptr ?  "nullptr" : my_to_string(parent->value) )<<"\n"<<std::string(indent,' ')<<"left: ";
             if (left!=nullptr) {std::cout << "\n";left ->DEBUG_print(indent+4);}
             else std::cout << "null\n";
             std::cout<<std::string(indent,' ')<<"right: ";
@@ -428,10 +478,8 @@ public:
 
     class my_iterator
     {
-
     public:
         //Look at design document for LaneContainer for exactly what requirements are needed
-
         using difference_type = std::ptrdiff_t;
         using value_type = T;//Not required since C++20
         using reference= T&;
@@ -453,11 +501,13 @@ public:
             return (myNode->value);
         }
 
+        //UNTESTED
         pointer operator-> ()
         {
             return &(myNode->value);
         }
 
+        //UNTESTED
         const_pointer operator-> () const
         {
             return &(myNode->value);
@@ -470,6 +520,7 @@ public:
             std::swap(myNode,it.myNode);
         }
 
+
         my_iterator& operator++()
         {
             if (myNode!=nullptr) myNode=myNode->next;
@@ -478,26 +529,26 @@ public:
 
         my_iterator(const my_iterator& j)//copy constructor
         {
-            myNode=j->myNode;
+            myNode=j.myNode;
         }
 
         const my_iterator& operator=(const  my_iterator& j)//copy assignment
         {
-            myNode=j->myNode;
+            myNode=j.myNode;
             return *this;
         }
 
         //move constructor and assignment, not required but good to have
         my_iterator(my_iterator&& j)
         {
-            myNode=j->myNode;
-            j->myNode=nullptr;
+            myNode=j.myNode;
+            j.myNode=nullptr;
         }
 
         my_iterator& operator=(my_iterator&& j)
         {
-            myNode=j->myNode;
-            j->myNode=nullptr;
+            myNode=j.myNode;
+            j.myNode=nullptr;
             return *this;
         }
 
@@ -516,54 +567,144 @@ public:
             //equivilant !(*this==j)
             return j.myNode!=myNode;
         }
-
-        /*
-*r`
-++r`
-X(j)`
-i=j`
-i.~X()`
-i==j`
-using std::
-i!=j`
-*i`
-i->m`
-++r`
-(void)r++`
-r++`
-*r++`
-*/
-
     };
-
  public:
-
-
-
 
     using iterator = my_iterator;
     using const_iterator = const my_iterator;
 
-
 //EVERYTHING BELOW ARE Requirements for CONTAINER (see https://en.cppreference.com/w/cpp/named_req/Container)
-    Lane(){;//default constructor
+    Lane() noexcept{;//default constructor
         head=nullptr;
         least=nullptr;
         greatest=nullptr;
+        mySize==0;
     }
 
     //UNTESTED
-    Lane(const Lane<T>& a)
+    Lane(const Lane<T>& other) noexcept
     {
-        //A O(N) SOLUTION IS CLEARLY POSSIBLE: LOOP THROUGH ALL NODES AND COPY THE EXISTING STRUCTURE TO NEW NODES, USE A HASHTABLE TO MAP OLD TO NEW NODES
-        std::copy(a.begin(),a.end(),std::back_inserter(*this)); //This is O(N log N) the same as std::sort
+        mySize=other.mySize;
+        if (other.head==nullptr)
+        {
+            head=nullptr;
+            least=nullptr;//If head is null, the others should be null as well
+            greatest=nullptr;
+        }
+        else
+        {
+            //Hashtable lookup for easy access of which new nodes in my tree, correspond to nodes in the old tree
+            std::unordered_map<const Node*,Node*> Node_lookup;
+
+            for (Node* N = other.least; N!=nullptr; N=N->next)
+            {
+                Node* my_N;
+
+                //Check if this Node has already been initialized in the new tree, if not make it, and put it in the table
+                auto it = Node_lookup.find(N);
+                if (it == Node_lookup.end())
+                {
+                    my_N=new Node(N->value);
+                    Node_lookup[N]=my_N;
+                }
+                else
+                    my_N=it->second;
+
+                //Copy the value into this new Node
+                my_N->value=N->value;
+                my_N->height=N->height;
+                my_N->balance_factor=N->balance_factor;
+
+                //Check all Nodes connected to this, if they don't already exist, make them, no need to bother about their individual values, we will either get to them later, or have already been there
+
+                if (N->left==nullptr)
+                    my_N->left=nullptr;
+                else
+                {
+                    it = Node_lookup.find(N->left);
+                    if (it == Node_lookup.end())
+                    {
+                        my_N->left=new Node(N->left->value);
+                        Node_lookup[N->left]=my_N->left;
+                    }
+                    else
+                        my_N->left=it->second;
+                }
+                if (N->right==nullptr)
+                    my_N->right=nullptr;
+                else
+                {
+                    it = Node_lookup.find(N->right);
+                    if (it == Node_lookup.end())
+                    {
+                        my_N->right=new Node(N->right->value);
+                        Node_lookup[N->right]=my_N->right;
+                    }
+                    else
+                        my_N->right=it->second;
+                }
+                if (N->prev==nullptr)
+                    my_N->prev=nullptr;
+                else
+                {
+                    //This one is guaranteed to exist, since we started from the least
+                    it = Node_lookup.find(N->prev);
+                    if (it == Node_lookup.end())
+                    {
+                        my_N->prev=new Node(N->prev->value);
+                        Node_lookup[N->prev]=my_N->prev;
+                    }
+                    else
+                        my_N->prev=it->second;
+                }
+                if (N->next==nullptr)
+                    my_N->next=nullptr;
+                else
+                {
+                    it = Node_lookup.find(N->next);
+                    if (it == Node_lookup.end())
+                    {
+                        my_N->next=new Node(N->next->value);
+                        Node_lookup[N->next]=my_N->next;
+                    }
+                    else
+                        my_N->next=it->second;
+                }
+
+
+                if (N->parent==nullptr)
+                {
+                    my_N->parent=nullptr;
+                    head=my_N;//This is the head
+                }
+                else
+                {
+                    it = Node_lookup.find(N->parent);
+                    if (it == Node_lookup.end())
+                    {
+                        my_N->parent=new Node(N->parent->value);
+                        Node_lookup[N->parent]=my_N->parent;
+                    }
+                    else
+                        my_N->parent=it->second;
+                }
+            }
+
+
+            //If other was a valid Lane, these should already exist and be non-null
+            least   = Node_lookup[other.least];
+            greatest= Node_lookup[other.greatest];
+        }
 
     }
 
 
     //UNTESTED
-    Lane(Lane&& other)
+    Lane(Lane&& other) noexcept
     {
+
+
+        mySize=other.mySize;
         head = other.head;
         other.head=nullptr;
         least=other.least;
@@ -573,18 +714,122 @@ r++`
     }
 
     //UNTESTED
-    Lane& operator=(const Lane& other)//copy assignment
+    Lane& operator=(const Lane& other) noexcept//copy assignment
     {
+
+        mySize=other.mySize;
+
         if (this!=&other)
         {
-            //SAME COMMENT AS IN COPY CONSTRUCTOR
-            std::copy(other.begin(),other.end(),std::back_inserter(*this)); //This is O(N log N) the same as std::sort
+            if (other.head==nullptr)
+            {
+                head=nullptr;
+                least=nullptr;//If head is null, the others should be null as well
+                greatest=nullptr;
+            }
+            else
+            {
+                //Hashtable lookup for easy access of which new nodes in my tree, correspond to nodes in the old tree
+                std::unordered_map<const Node*,Node*> Node_lookup;
+
+                for (Node* N = other.least; N!=nullptr; N=N->next)
+                {
+                    Node* my_N;
+
+                    //Check if this Node has already been initialized in the new tree, if not make it, and put it in the table
+                    auto it = Node_lookup.find(N);
+                    if (it == Node_lookup.end())
+                    {
+                        my_N=new Node(N->value);
+                        Node_lookup[N]=my_N;
+                    }
+                    else
+                        my_N=it->second;
+
+                    //Copy the value into this new Node
+                    my_N->value=N->value;
+                    my_N->height=N->height;
+                    my_N->balance_factor=N->balance_factor;
+
+                    //Check all Nodes connected to this, if they don't already exist, make them, no need to bother about their individual values, we will either get to them later, or have already been there
+
+                    if (N->left==nullptr)
+                        my_N->left=nullptr;
+                    else
+                    {
+                        it = Node_lookup.find(N->left);
+                        if (it == Node_lookup.end())
+                        {
+                            my_N->left=new Node(N->left->value);
+                            Node_lookup[N->left]=my_N->left;
+                        }
+                        else
+                            my_N->left=it->second;
+                    }
+                    if (N->right==nullptr)
+                        my_N->right=nullptr;
+                    else
+                    {
+                        it = Node_lookup.find(N->right);
+                        if (it == Node_lookup.end())
+                        {
+                            my_N->right=new Node(N->right->value);
+                            Node_lookup[N->right]=my_N->right;
+                        }
+                        else
+                            my_N->right=it->second;
+                    }
+                    if (N->prev==nullptr)
+                        my_N->prev=nullptr;
+                    else
+                    {
+                        //This one is guaranteed to exist, since we started from the least
+                        it = Node_lookup.find(N->prev);
+                        if (it == Node_lookup.end())
+                        {
+                            my_N->prev=new Node(N->prev->value);
+                            Node_lookup[N->prev]=my_N->prev;
+                        }
+                        else
+                            my_N->prev=it->second;
+                    }
+                    if (N->next==nullptr)
+                        my_N->next=nullptr;
+                    else
+                    {
+                        it = Node_lookup.find(N->next);
+                        if (it == Node_lookup.end())
+                        {
+                            my_N->next=new Node(N->next->value);
+                            Node_lookup[N->next]=my_N->next;
+                        }
+                        else
+                            my_N->next=it->second;
+                    }
+                    if (N->parent==nullptr)
+                    {
+                        my_N->parent=nullptr;
+                        head=my_N;//This is the head
+                    }
+                    else
+                    {
+                        it = Node_lookup.find(N->parent);
+                        if (it == Node_lookup.end())
+                        {
+                            my_N->parent=new Node(N->parent->value);
+                            Node_lookup[N->parent]=my_N->parent;
+                        }
+                        else
+                            my_N->parent=it->second;
+                    }
+                }
+            }
         }
         return *this;
     }
 
     //UNTESTED
-    Lane& operator=(Lane&& other)//move assignment
+    Lane& operator=(Lane&& other) noexcept//move assignment
     {
         if (this!=&other)
         {
@@ -594,25 +839,26 @@ r++`
             other.least=nullptr;
             greatest=other.greatest;
             other.greatest=nullptr;
+            mySize=other.mySize;
         }
         return *this;
     }
 
 
     //destructor
-    ~Lane()
+    ~Lane() noexcept
     {
         delete head;//Destructs everything
     }
 
-    iterator begin() {return iterator(least);}
-    iterator end()   {return iterator(nullptr);}
+    iterator begin()noexcept {return iterator(least);}
+    iterator end()  noexcept {return iterator(nullptr);}
 
-    const const_iterator begin()const {return iterator(least);}
-    const const_iterator end()  const {return iterator(nullptr);}
+    const const_iterator begin()const noexcept {return iterator(least);}
+    const const_iterator end()  const noexcept {return iterator(nullptr);}
 
     //UNTESTED, TEST WITH EMPTY, NON-EMPTY DIFFERENT STRUCTURE, NON-EMPTU SAME STRUCTURE DIFFERENT AND SAME VALUES
-    bool operator==(const Lane<T>& b) const
+    bool operator==(const Lane<T>& b) const noexcept
     {
         if (b.size()==size())
         {
@@ -623,7 +869,7 @@ r++`
     }
 
     //UNTESTED
-    bool operator!=(const Lane<T>& b) const
+    bool operator!=(const Lane<T>& b) const noexcept
     {
         return !(operator==(b));
     }
@@ -637,32 +883,36 @@ r++`
         b.least=nullptr;
         greatest=b.greatest;
         b.greatest=nullptr;
+        mySize=b.mySize;
     }
 
     //UNTESTED
-    static void swap(Lane<T>& a,Lane<T>& b)
+    static void swap(Lane<T>& a,Lane<T>& b) noexcept
     {
         a.swap(b);
     }
 
     //UNTESTED
-    size_type size()const
+    size_type size()const noexcept
     {
-        //BETTER ACTUALLY SAVE THIS NUMBER DURING INSERTS, TEST AGAINST THIS
-        return std::distance(begin(),end());
+        //Should equal std::distance(begin(),end());
+        return mySize;
     }
 
     //UNTESTED (I do not want to check a Lane this big though)
-    size_type max_size()const
+    size_type max_size()const noexcept
     {
         return std::numeric_limits<difference_type>::max();
     }
 
     //UNTESTED, TEST THAT size()==0 DOES THE SAME THING
-    bool empty()const
+    bool empty()const noexcept
     {
         return head==nullptr;
     }
+
+
+//END OF CONTAINER REQUIREMENTS
 
 //We only implement SOME Requirements for SEQUENCE CONTAINER (see https://en.cppreference.com/w/cpp/named_req/SequenceContainer), it doesn't make sense to implement all
 
@@ -672,8 +922,9 @@ r++`
         {
             std::copy(start,end,std::back_inserter(*this)); //This is O(N log N) the same as std::sort
         }
-    //Full disclosure, I could not get enough documentation to implement Lane(std::from_range, rg), thus this is NOT C++23 compatible
 
+
+    //I could not get enough documentation to implement Lane(std::from_range, rg), thus this is NOT C++23 compatible
     Lane(std::initializer_list<T> il):Lane(il.begin(),il.end()){}
 
     Lane& operator =(std::initializer_list<T> il)
@@ -687,29 +938,92 @@ r++`
         //as that goes out of scope, the old data is safely handled by the destructor
     }
 
+
+    void inline insert(T&& t) noexcept
+    {
+        push_back(std::move(t));
+    }
+
     //Now the important ones, the actual insertions followed by sorting
     //I name it push_back, to get a working std::back_inserter
-    void push_back(T t)
+    void push_back(T t) noexcept
     {
         if (head==nullptr)
         {
             head     = new Node(std::move(t));
             least    = head;
             greatest = head;
+            mySize = 1;
         }
         else
         {
-            head = head->insert(std::move(t),least,greatest);
+            head = head->insert(std::move(t),least,greatest,mySize);
+
         }
 
         #ifdef DEBUG_PRINT_ON_INSERT
-        std::cout<<"AFTER POST INSERT "<<t<<std::endl;
+        std::cout<<"AFTER INSERT OF "<<my_to_string(t)<<" THE TREE LOOKS LIKE THIS: "<<std::endl;
         DEBUG_print_tree();
         #endif
     }
 
-    #ifdef DEBUG_PRINT_ON_INSERT
-    void DEBUG_print_tree() const
+    /*MISSIG IMPLEMENTATION
+
+    void erase(iterator& it)
+    {
+
+    }
+
+    void erase(const T& t)
+    {
+        erase(find(t));
+    }
+
+    iterator& find(T& t) noexcept
+    {
+
+    }
+
+    const_iterator& find(const T& t) noexcept
+    {
+
+    }
+
+        size_type count(double t)noexcept;
+        size_type count(const T& t)noexcept;
+        iterator find(const T& t)noexcept;
+        iterator find(double t)noexcept;
+        iterator lower_bound(T t)noexcept;
+        iterator lower_bound(double t)noexcept;
+        iterator upper_bound(T t)noexcept;
+        iterator upper_bound(double t)noexcept;
+
+    Const versions also exists
+
+        const_iterator find(const T& t) const noexcept;
+        const_iterator find(double t) const noexcept;
+        const_iterator lower_bound(T t) const noexcept;
+        const_iterator lower_bound(double t) const noexcept;
+        const_iterator upper_bound(T t) const noexcept;
+        const_iterator upper_bound(double t) const noexcept;
+
+        bool is_still_sorted() noexcept;
+
+
+        iterator first() noexcept;
+        iterator last () noexcept;
+        const_iterator first() const noexcept;
+        const_iterator last () const noexcept;
+
+        iterator next(const_iterator&) noexcept;
+        iterator prev(const_iterator&) noexcept;
+        const_iterator next(const_iterator&) const noexcept;
+        const_iterator prev(const_iterator&) const noexcept;
+    */
+
+
+    #ifdef DEBUG_PRINT_ENABLE
+    void DEBUG_print_tree() const noexcept
     {
         if (head==nullptr)
             std::cout<<"Empty"<<std::endl;
@@ -720,7 +1034,7 @@ r++`
 
             std::cout<<"\nBy size: ";
             for (const Node* N = least; N!=nullptr; N=N->next)
-                std::cout<<N->value<<' ';
+                std::cout<<my_to_string(N->value)<<' ';
             std::cout<<std::endl;
         }
     }
@@ -735,6 +1049,7 @@ private:
     Node* least   =nullptr;
     Node* greatest=nullptr;
 
+    size_type mySize=0;
 
     //Call basic static asserts, ensuring that our iterator is indeed an iterator
     static_assert(std::is_copy_constructible_v<Lane<T>::iterator>);
