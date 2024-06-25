@@ -1,12 +1,13 @@
-A custom container for storing vehicles on a road
+A custom container for storing vehicles on a road in sorted order
 ============
+
+
 no default container really works well in this case, std::set comes close ... but I do not trust it to always work when the sorting key changes.
 
 This container will only be used for the RoadVehicle class, but will work for anything T, with a < operator for T and double
 
 Prerequisites
 -------
-
 This must be a fully functioning C++ container, compatible with all algorithms in the \<algorithm\> header (it will not be a sequence container, since the order of insertion fundamentally does not matter)
 
 The pre-requisite for this container is that vehicles are sorted based on position.
@@ -27,7 +28,7 @@ The AVL tree is a perfectly ordinary AVL tree, which uses left/right rotations, 
 
 The linked list is updated on insertion and deletion of elements, and links elements in order of value.
 
-Methods and members
+Member functions and typedefs
 -----
 The tree has a custom iterator for stepping through the tree from lowest to smallest, it implements all requirements for containers: These work exactly the way they are required for a container (plus some extra from SequenceContainter and Associative container):
 
@@ -35,7 +36,7 @@ The tree has a custom iterator for stepping through the tree from lowest to smal
     Lane();
     Lane(const Lane& other);
     Lane(Lane&& other);
-    Lane& operator=(const Lane& other);
+    Lane& operator=(const Lane& other);//O(N) copy
     Lane& operator=(Lane&& other);
     ~Lane();
     Lane::iterator begin();
@@ -50,41 +51,55 @@ The tree has a custom iterator for stepping through the tree from lowest to smal
     size_type max_size();
     bool empty();
 
-Additionally this constructor copies from any other container in O(N log(N)):
+To fulfill the requirements, the following types have been defined:
 
+    Lane<T>::value_type      = T;
+    Lane<T>::pointer_type    = T*;
+    Lane<T>::size_type       = size_t;
+    Lane<T>::difference_type = std::ptrdiff_t;
+    Lane<T>::reference       = T&;
+    Lane<T>::const_reference = const T&;
+    Lane<T>::iterator        = my_iterator;//custom LegacyForwardIterator
+    Lane<T>::const_iterator  = const my_iterator;
+
+Additionally this constructor copies from any other container in O(N log(N)):
 
     template<LegacyInputIterator Iter>//Accepts any input iterator
         Lane(Iter start, Iter end);
 
 
-The tree provides these functions, ideally in time O(log(N)), it is likely pretty obvious how they work, there can only be one element with the same value (otherwise it is overwritten):
 
-    void insert(T t);
+These functions are provided by accessing the underlying AVL-tree, these should run in time O(log(N)):
+
+    void insert(T&& t);
     void push_back(T t);//Same as insert, used for the std::back_inserter to work
-    size_type count(double t);
-    size_type count(T t);
-    iterator find(T t);
-    iterator find(double t);
+    size_type count(double t)noexcept;
+    size_type count(const T& t)noexcept;
 
-    //return end() if the element does not exist
-    iterator lower_bound(T t);
-    iterator lower_bound(double t);
-    iterator upper_bound(T t);
-    iterator upper_bound(double t);
+The following finding functions all return `Lane<T>end()` for not found member, should be O(log(N))
 
-The linked list structure provides a function for checking if everything is sorted:
+    iterator find(const T& t)noexcept;
+    iterator find(double t)noexcept;
+    iterator lower_bound(T t)noexcept;
+    iterator lower_bound(double t)noexcept;
+    iterator upper_bound(T t)noexcept;
+    iterator upper_bound(double t)noexcept;
+
+The underlying linked list structure provides a function for checking if everything is still sorted:
 
     bool is_still_sorted() noexcept;
 
-It also provides functions for get the element just before, or just before or after an iterator in time O(1), or at the start and end, these return false if the requested element do not exist
+It also provides functions for get the element just before, or just before or after an iterator in time O(1), or at the start and end:
 
-    bool first(T& out) noexcept;
-    bool last (T& out) noexcept;
+    iterator first() noexcept;
+    iterator last () noexcept;
+    const_iterator first() const noexcept;
+    const_iterator last () const noexcept;
 
-    bool next(T& out, const_iterator&) noexcept;
-    bool prev(T& out, const_iterator&) noexcept;
-    bool next(const T& out, const_iterator&) const noexcept;
-    bool prev(const T& out, const_iterator&) const noexcept;
+    iterator next(const_iterator&) noexcept;
+    iterator prev(const_iterator&) noexcept;
+    const_iterator next(const_iterator&) const noexcept;
+    const_iterator prev(const_iterator&) const noexcept;
 
 By mixing these with `lower\_bound`, `upper\_bound` and `find`, we can make these O(log(N)) functions:
 
