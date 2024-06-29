@@ -7,17 +7,12 @@ include_directories(${GTEST_INCLUDE_DIRS})
 # Define the test executable
 add_executable(Test test.cpp Test_Loading.cpp Test_Vehicle.cpp Test_Lane.cpp)
 
-#We also have another test, where we compile Lane.hpp with slightly different #defines.
-#Specifically, this version logs its own memory usage. It is imperative that this be tested in a single thread, which this file specifically ensures
-add_executable(Memory_Test Test_Lane_memory.cpp)
 
 # Include directories
 target_include_directories(Test PRIVATE ../include)
-target_include_directories(Memory_Test PRIVATE ../include)
 
 # Link to gtest framework
 target_link_libraries(Test ${GTEST_LIBRARIES} pthread )
-target_link_libraries(Memory_Test ${GTEST_LIBRARIES} )
 
 
 file(GLOB_RECURSE sources
@@ -26,7 +21,6 @@ file(GLOB_RECURSE sources
 
 #Link Jsoncpp
 target_link_libraries(Test ${JSONCPP_LIBRARIES})
-target_link_libraries(Memory_Test ${JSONCPP_LIBRARIES})
 
 # Link libraries to main program
 target_link_libraries(Test RoadVehicle)
@@ -35,7 +29,7 @@ target_link_libraries(Test Road)
 target_link_libraries(Test Node)
 target_link_libraries(Test Hellhole)
 target_link_libraries(Test CityNetwork)
+target_link_libraries(Test Lane)
 
 # Add test
 add_test(NAME TestTraffic COMMAND Test)
-add_test(NAME TestTraffic_memory COMMAND Memory_Test)

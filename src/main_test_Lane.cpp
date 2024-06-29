@@ -1,7 +1,6 @@
 #include<iostream>
 
 #define DEBUG_PRINT_ON_INSERT
-#define DEBUG_loading_counter
 #include"Lane.hpp"
 
 //Simply demonstrate that the lane container is working, with an example of how to use it, this is not the test, that lives in the test/ directory, it is more an example of how to use it, for later copy-pasting
@@ -19,7 +18,6 @@ int main()
         }
         testLane.DEBUG_print_tree();
 
-        std::cout<<loading_counter<<std::endl;
 
 
 
@@ -28,12 +26,10 @@ int main()
 
         testLane_copy.DEBUG_print_tree();
 
-        std::cout<<loading_counter<<std::endl;
 
         std::cout<<(testLane==testLane_copy ? "same" : "not")<<std::endl;
     }
 
-    std::cout<<loading_counter<<std::endl;
 
     return 0;
 }

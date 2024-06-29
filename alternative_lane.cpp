@@ -101,9 +101,9 @@ template <LaneElement T>
 
 
 //This class has NO public members!
-//It was supposed to be an internal class in Lane<T>, but for reasons described in the design document for Lane and AVL_AVL_Node it was split up into its own class library
+//It was supposed to be an internal class in Lane<T>, but for reasons described in the design document for Lane and Node it was split up into its own class library
 //By marking every member as private, and making the Lane<T> the only friend class, we can get the same effect
-class AVL_Node{
+class Node{
 private:
     //This was really supposed to be a struct, inside of Lane<T> but it is so large that it was moved to a separate class library, though friend statements are considered bad OOP, this is the best way to move this class outside Lane<T>, without givin anybody else access to its content, with minimal refactoring.
     template<LaneElement T> friend class Lane;
@@ -119,14 +119,14 @@ private:
 
 
     //OWNED nodes
-    AVL_Node* left=nullptr;
-    AVL_Node* right=nullptr;
+    Node* left=nullptr;
+    Node* right=nullptr;
 
 
     //Non owned node, which we nevertheless know
-    AVL_Node* next=nullptr;
-    AVL_Node* prev=nullptr;
-    AVL_Node* parent=nullptr;
+    Node* next=nullptr;
+    Node* prev=nullptr;
+    Node* parent=nullptr;
 
 
     size_type height=0;//longest path to leaf
@@ -136,31 +136,31 @@ private:
     std::shared_ptr<void> get_pvalue() {return pvalue;}//get pointer to my value
     std::shared_ptr<const void> get_pvalue() const {return pvalue;}
 
-    AVL_Node(std::shared_ptr<void> val,compare less, compare equal,AVL_Node* p=nullptr);
+    Node(std::shared_ptr<void> val,compare less, compare equal,Node* p=nullptr);
 
-    ~AVL_Node();
+    ~Node();
 
     //Am I the same as this? in terms of subtree content and structure
-    bool is_same_subtree(const AVL_Node* that)const;
+    bool is_same_subtree(const Node* that)const;
 
 
-    AVL_Node* insert(std::shared_ptr<void> val,AVL_Node*& least, AVL_Node*& greatest,size_type& mySize);
+    Node* insert(std::shared_ptr<void> val,Node*& least, Node*& greatest,size_type& mySize);
 
     //Returns new head of this subtree
     //ASSUMES right is not nullptr and has balance factor 1, otherwise this would not be called
-    AVL_Node* rotateLeft();
+    Node* rotateLeft();
 
     //Same but rotate right
-    AVL_Node* rotateRight();
+    Node* rotateRight();
 
     //Same but rotate right-left
-    AVL_Node* rotateRightLeft();
+    Node* rotateRightLeft();
 
     //Same but rotate left-right
-    AVL_Node* rotateLeftRight();
+    Node* rotateLeftRight();
 
     //Returns new head of this subtree
-    AVL_Node* insert(AVL_Node* New,size_type& mySize);
+    Node* insert(Node* New,size_type& mySize);
 
 
     void DEBUG_print(int indent, std::function<std::string(const std::shared_ptr<void>&)> printer ) const noexcept;
@@ -182,7 +182,7 @@ public:
     using value_type        = T;
     using pointer_type      = std::shared_ptr<T>;
     using const_pointer_type= std::shared_ptr<const T>;
-    using size_type         = AVL_Node::size_type;
+    using size_type         = Node::size_type;
     using difference_type   = std::ptrdiff_t;
     using reference         = T&;
     using const_reference   = const T&;
@@ -190,10 +190,10 @@ public:
 
 
 
- //We need the AVL_Node class, before we can make our iterator, so go into private mode and define that
+ //We need the Node class, before we can make our iterator, so go into private mode and define that
  private:
 
-    //These are the comparisons which our AVL_Nodes shall use to sort object
+    //These are the comparisons which our Nodes shall use to sort object
     static bool T_less_than(const std::shared_ptr<void>& a, const std::shared_ptr<void>& b) {
         return *std::static_pointer_cast<T>(a) < *std::static_pointer_cast<T>(b);
     };
@@ -216,68 +216,68 @@ public:
         using const_pointer= std::shared_ptr<const T>;
         using iterator_category= std::forward_iterator_tag;
     private:
-        AVL_Node* myAVL_Node=nullptr;//This is used as Lane.end(), since that is what we get if we use one too many ++
+        Node* myNode=nullptr;//This is used as Lane.end(), since that is what we get if we use one too many ++
     public:
 
         reference  operator*()
         {
-            return *(std::static_pointer_cast<value_type>(myAVL_Node->pvalue));
+            return *(std::static_pointer_cast<value_type>(myNode->pvalue));
         }
 
         const_reference operator*() const
         {
-            return *(std::static_pointer_cast<const value_type>(myAVL_Node->pvalue));
+            return *(std::static_pointer_cast<const value_type>(myNode->pvalue));
         }
 
 
         //UNTESTED
         pointer operator-> ()
         {
-            return std::static_pointer_cast<value_type>(myAVL_Node->pvalue);
+            return std::static_pointer_cast<value_type>(myNode->pvalue);
         }
 
         //UNTESTED
         const_pointer operator-> () const
         {
-            return std::static_pointer_cast<value_type>(myAVL_Node->pvalue);
+            return std::static_pointer_cast<value_type>(myNode->pvalue);
         }
 
-        my_iterator(AVL_Node* N=nullptr) noexcept {myAVL_Node=N;}//The nullptr node is the same as Lane.end()
+        my_iterator(Node* N=nullptr) noexcept {myNode=N;}//The nullptr node is the same as Lane.end()
 
         void swap(my_iterator& it)
         {
-            std::swap(myAVL_Node,it.myAVL_Node);
+            std::swap(myNode,it.myNode);
         }
 
 
         my_iterator& operator++()
         {
-            if (myAVL_Node!=nullptr) myAVL_Node=myAVL_Node->next;
+            if (myNode!=nullptr) myNode=myNode->next;
             return *this;
         }
 
         my_iterator(const my_iterator& j)//copy constructor
         {
-            myAVL_Node=j.myAVL_Node;
+            myNode=j.myNode;
         }
 
         const my_iterator& operator=(const  my_iterator& j)//copy assignment
         {
-            myAVL_Node=j.myAVL_Node;
+            myNode=j.myNode;
             return *this;
         }
 
         //move constructor and assignment, not required but good to have
         my_iterator(my_iterator&& j)
         {
-            myAVL_Node=j.myAVL_Node;
-            j.myAVL_Node=nullptr;
+            myNode=j.myNode;
+            j.myNode=nullptr;
         }
 
         my_iterator& operator=(my_iterator&& j)
         {
-            myAVL_Node=j.myAVL_Node;
-            j.myAVL_Node=nullptr;
+            myNode=j.myNode;
+            j.myNode=nullptr;
             return *this;
         }
 
@@ -288,13 +288,13 @@ public:
 
         bool operator==(const my_iterator& j) const
         {
-            return j.myAVL_Node==myAVL_Node;
+            return j.myNode==myNode;
         }
 
         bool operator!=(const my_iterator& j) const
         {
             //equivilant !(*this==j)
-            return j.myAVL_Node!=myAVL_Node;
+            return j.myNode!=myNode;
         }
     };
  public:
@@ -323,18 +323,18 @@ public:
         else
         {
             //Hashtable lookup for easy access of which new nodes in my tree, correspond to nodes in the old tree
-            std::unordered_map<const AVL_Node*,AVL_Node*> AVL_Node_lookup;
+            std::unordered_map<const Node*,Node*> Node_lookup;
 
-            for (AVL_Node* N = other.least; N!=nullptr; N=N->next)
+            for (Node* N = other.least; N!=nullptr; N=N->next)
             {
-                AVL_Node* my_N;
+                Node* my_N;
 
-                //Check if this AVL_Node has already been initialized in the new tree, if not make it, and put it in the table
-                auto it = AVL_Node_lookup.find(N);
-                if (it == AVL_Node_lookup.end())
+                //Check if this Node has already been initialized in the new tree, if not make it, and put it in the table
+                auto it = Node_lookup.find(N);
+                if (it == Node_lookup.end())
                 {
-                    my_N=new AVL_Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->pvalue) /*Force copy constructor!*/),T_less_than,T_equal);
-                    AVL_Node_lookup[N]=my_N;
+                    my_N=new Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->pvalue) /*Force copy constructor!*/),T_less_than,T_equal);
+                    Node_lookup[N]=my_N;
                 }
                 else
                 {
@@ -342,21 +342,21 @@ public:
                     my_N->pvalue=std::make_shared<T>( *std::static_pointer_cast<T>(N->pvalue) /*Force copy constructor!*/);
                 }
 
-                //Copy the value into this new AVL_Node
+                //Copy the value into this new Node
                 my_N->height=N->height;
                 my_N->balance_factor=N->balance_factor;
 
-                //Check all AVL_Nodes connected to this, if they don't already exist, make them, no need to bother about their individual values, we will either get to them later, or have already been there
+                //Check all Nodes connected to this, if they don't already exist, make them, no need to bother about their individual values, we will either get to them later, or have already been there
 
                 if (N->left==nullptr)
                     my_N->left=nullptr;
                 else
                 {
-                    it = AVL_Node_lookup.find(N->left);
-                    if (it == AVL_Node_lookup.end())
+                    it = Node_lookup.find(N->left);
+                    if (it == Node_lookup.end())
                     {
-                        my_N->left=new AVL_Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->left->pvalue)),T_less_than,T_equal);
-                        AVL_Node_lookup[N->left]=my_N->left;
+                        my_N->left=new Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->left->pvalue)),T_less_than,T_equal);
+                        Node_lookup[N->left]=my_N->left;
                     }
                     else
                         my_N->left=it->second;
@@ -365,11 +365,11 @@ public:
                     my_N->right=nullptr;
                 else
                 {
-                    it = AVL_Node_lookup.find(N->right);
-                    if (it == AVL_Node_lookup.end())
+                    it = Node_lookup.find(N->right);
+                    if (it == Node_lookup.end())
                     {
-                        my_N->right=new AVL_Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->right->pvalue)),T_less_than,T_equal);
-                        AVL_Node_lookup[N->right]=my_N->right;
+                        my_N->right=new Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->right->pvalue)),T_less_than,T_equal);
+                        Node_lookup[N->right]=my_N->right;
                     }
                     else
                         my_N->right=it->second;
@@ -379,11 +379,11 @@ public:
                 else
                 {
                     //This one is guaranteed to exist, since we started from the least
-                    it = AVL_Node_lookup.find(N->prev);
-                    if (it == AVL_Node_lookup.end())
+                    it = Node_lookup.find(N->prev);
+                    if (it == Node_lookup.end())
                     {
-                        my_N->prev=new AVL_Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->prev->pvalue)),T_less_than,T_equal);
-                        AVL_Node_lookup[N->prev]=my_N->prev;
+                        my_N->prev=new Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->prev->pvalue)),T_less_than,T_equal);
+                        Node_lookup[N->prev]=my_N->prev;
                     }
                     else
                         my_N->prev=it->second;
@@ -392,11 +392,11 @@ public:
                     my_N->next=nullptr;
                 else
                 {
-                    it = AVL_Node_lookup.find(N->next);
-                    if (it == AVL_Node_lookup.end())
+                    it = Node_lookup.find(N->next);
+                    if (it == Node_lookup.end())
                     {
-                        my_N->next=new AVL_Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->next->pvalue)),T_less_than,T_equal);
-                        AVL_Node_lookup[N->next]=my_N->next;
+                        my_N->next=new Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->next->pvalue)),T_less_than,T_equal);
+                        Node_lookup[N->next]=my_N->next;
                     }
                     else
                         my_N->next=it->second;
@@ -410,11 +410,11 @@ public:
                 }
                 else
                 {
-                    it = AVL_Node_lookup.find(N->parent);
-                    if (it == AVL_Node_lookup.end())
+                    it = Node_lookup.find(N->parent);
+                    if (it == Node_lookup.end())
                     {
-                        my_N->parent=new AVL_Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->parent->pvalue)),T_less_than,T_equal);
-                        AVL_Node_lookup[N->parent]=my_N->parent;
+                        my_N->parent=new Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->parent->pvalue)),T_less_than,T_equal);
+                        Node_lookup[N->parent]=my_N->parent;
                     }
                     else
                         my_N->parent=it->second;
@@ -423,8 +423,8 @@ public:
 
 
             //If other was a valid Lane, these should already exist and be non-null
-            least   = AVL_Node_lookup[other.least];
-            greatest= AVL_Node_lookup[other.greatest];
+            least   = Node_lookup[other.least];
+            greatest= Node_lookup[other.greatest];
         }
 
     }
@@ -467,18 +467,18 @@ public:
                 else
                 {
                     //Hashtable lookup for easy access of which new nodes in my tree, correspond to nodes in the old tree
-                    std::unordered_map<const AVL_Node*,AVL_Node*> AVL_Node_lookup;
+                    std::unordered_map<const Node*,Node*> Node_lookup;
 
-                    for (AVL_Node* N = other.least; N!=nullptr; N=N->next)
+                    for (Node* N = other.least; N!=nullptr; N=N->next)
                     {
-                        AVL_Node* my_N;
+                        Node* my_N;
 
-                        //Check if this AVL_Node has already been initialized in the new tree, if not make it, and put it in the table
-                        auto it = AVL_Node_lookup.find(N);
-                        if (it == AVL_Node_lookup.end())
+                        //Check if this Node has already been initialized in the new tree, if not make it, and put it in the table
+                        auto it = Node_lookup.find(N);
+                        if (it == Node_lookup.end())
                         {
-                            my_N=new AVL_Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->pvalue) /*Force copy constructor!*/),T_less_than,T_equal);
-                            AVL_Node_lookup[N]=my_N;
+                            my_N=new Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->pvalue) /*Force copy constructor!*/),T_less_than,T_equal);
+                            Node_lookup[N]=my_N;
                         }
                         else
                         {
@@ -486,21 +486,21 @@ public:
                             my_N->pvalue=std::make_shared<T>( *std::static_pointer_cast<T>(N->pvalue) /*Force copy constructor!*/);
                         }
 
-                        //Copy the value into this new AVL_Node
+                        //Copy the value into this new Node
                         my_N->height=N->height;
                         my_N->balance_factor=N->balance_factor;
 
-                        //Check all AVL_Nodes connected to this, if they don't already exist, make them, no need to bother about their individual values, we will either get to them later, or have already been there
+                        //Check all Nodes connected to this, if they don't already exist, make them, no need to bother about their individual values, we will either get to them later, or have already been there
 
                         if (N->left==nullptr)
                             my_N->left=nullptr;
                         else
                         {
-                            it = AVL_Node_lookup.find(N->left);
-                            if (it == AVL_Node_lookup.end())
+                            it = Node_lookup.find(N->left);
+                            if (it == Node_lookup.end())
                             {
-                                my_N->left=new AVL_Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->left->pvalue)),T_less_than,T_equal);
-                                AVL_Node_lookup[N->left]=my_N->left;
+                                my_N->left=new Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->left->pvalue)),T_less_than,T_equal);
+                                Node_lookup[N->left]=my_N->left;
                             }
                             else
                                 my_N->left=it->second;
@@ -509,11 +509,11 @@ public:
                             my_N->right=nullptr;
                         else
                         {
-                            it = AVL_Node_lookup.find(N->right);
-                            if (it == AVL_Node_lookup.end())
+                            it = Node_lookup.find(N->right);
+                            if (it == Node_lookup.end())
                             {
-                                my_N->right=new AVL_Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->right->pvalue)),T_less_than,T_equal);
-                                AVL_Node_lookup[N->right]=my_N->right;
+                                my_N->right=new Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->right->pvalue)),T_less_than,T_equal);
+                                Node_lookup[N->right]=my_N->right;
                             }
                             else
                                 my_N->right=it->second;
@@ -523,11 +523,11 @@ public:
                         else
                         {
                             //This one is guaranteed to exist, since we started from the least
-                            it = AVL_Node_lookup.find(N->prev);
-                            if (it == AVL_Node_lookup.end())
+                            it = Node_lookup.find(N->prev);
+                            if (it == Node_lookup.end())
                             {
-                                my_N->prev=new AVL_Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->prev->pvalue)),T_less_than,T_equal);
-                                AVL_Node_lookup[N->prev]=my_N->prev;
+                                my_N->prev=new Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->prev->pvalue)),T_less_than,T_equal);
+                                Node_lookup[N->prev]=my_N->prev;
                             }
                             else
                                 my_N->prev=it->second;
@@ -536,11 +536,11 @@ public:
                             my_N->next=nullptr;
                         else
                         {
-                            it = AVL_Node_lookup.find(N->next);
-                            if (it == AVL_Node_lookup.end())
+                            it = Node_lookup.find(N->next);
+                            if (it == Node_lookup.end())
                             {
-                                my_N->next=new AVL_Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->next->pvalue)),T_less_than,T_equal);
-                                AVL_Node_lookup[N->next]=my_N->next;
+                                my_N->next=new Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->next->pvalue)),T_less_than,T_equal);
+                                Node_lookup[N->next]=my_N->next;
                             }
                             else
                                 my_N->next=it->second;
@@ -554,11 +554,11 @@ public:
                         }
                         else
                         {
-                            it = AVL_Node_lookup.find(N->parent);
-                            if (it == AVL_Node_lookup.end())
+                            it = Node_lookup.find(N->parent);
+                            if (it == Node_lookup.end())
                             {
-                                my_N->parent=new AVL_Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->parent->pvalue)),T_less_than,T_equal);
-                                AVL_Node_lookup[N->parent]=my_N->parent;
+                                my_N->parent=new Node(std::make_shared<T>( *std::static_pointer_cast<T>(N->parent->pvalue)),T_less_than,T_equal);
+                                Node_lookup[N->parent]=my_N->parent;
                             }
                             else
                                 my_N->parent=it->second;
@@ -567,8 +567,8 @@ public:
 
 
                     //If other was a valid Lane, these should already exist and be non-null
-                    least   = AVL_Node_lookup[other.least];
-                    greatest= AVL_Node_lookup[other.greatest];
+                    least   = Node_lookup[other.least];
+                    greatest= Node_lookup[other.greatest];
 
                 }
             }
@@ -713,7 +713,7 @@ public:
     {
         if (head==nullptr)
         {
-            head     = new AVL_Node(std::make_shared<T>(std::move(t)),T_less_than,T_equal);
+            head     = new Node(std::make_shared<T>(std::move(t)),T_less_than,T_equal);
             least    = head;
             greatest = head;
             mySize = 1;
@@ -794,7 +794,7 @@ public:
             head->DEBUG_print(0,[](const std::shared_ptr<const void>& P){ return my_to_string(*std::static_pointer_cast<const T>(P));});
 
             std::cout<<"\nBy size: ";
-            for (const AVL_Node* N = least; N!=nullptr; N=N->next)
+            for (const Node* N = least; N!=nullptr; N=N->next)
                 std::cout<<my_to_string( *std::static_pointer_cast<T>(N->pvalue) )<<' ';
             std::cout<<std::endl;
         }
@@ -804,11 +804,11 @@ public:
 private:
 
     //owned
-    AVL_Node* head    =nullptr;
+    Node* head    =nullptr;
 
     //Non-owned
-    AVL_Node* least   =nullptr;
-    AVL_Node* greatest=nullptr;
+    Node* least   =nullptr;
+    Node* greatest=nullptr;
 
     size_type mySize=0;
 
@@ -824,6 +824,3 @@ private:
     static_assert(std::is_same<typename std::iterator_traits<Lane<T>::iterator>::pointer,std::shared_ptr<T> >::value);
     static_assert(std::is_same<typename std::iterator_traits<Lane<T>::iterator>::iterator_category,std::forward_iterator_tag>::value);
 };
-
-
-

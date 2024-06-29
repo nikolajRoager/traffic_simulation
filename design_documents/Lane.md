@@ -1,5 +1,3 @@
-
-
 A custom container for storing vehicles on a road in sorted order
 ============
 A Lane mainly functions as a single ended queue but random insertion and deletion is allowed, the elements T have an ordering operator against other T and against double pos, (the two ordering operators are transitive with each other)
@@ -8,7 +6,7 @@ Elements are looked up, based on either other elements, or the double they are e
 
 It is legal for elements to change what double they compare to, even outside control of the lane, a function `bool is_still_sorted()` exist for checking if the ordering has been altered.
 
-All other functions assumes that `is_still_sorted()` has been verified true, or that no alterations have been made. The container DOES NOT verify this automatically, and running any functions on a Lane where `is_still_sorted()==false` will result in undefined behaviour.
+All other functions assumes that `is_still_sorted()` has been verified true, or that no alterations have been made. The container DOES NOT verify this automatically, and running any functions on a Lane where `is_still_sorted()==false` will result in undefined behaviour. (Checking for this would degrade performance too much)
 
 This container will only be used for the RoadVehicle class, but will work for anything T, with a < operator for T and double
 
@@ -34,39 +32,19 @@ The AVL tree is a perfectly ordinary AVL tree, which uses left/right rotations, 
 
 The linked list is updated on insertion and deletion of elements, and links elements in order of value.
 
+Headers and statically linked files
+-----
+The main `Lane<T>` template class is defined in a header file (since Templates should not be compiled in separate files), but some of the functionalities is saved in an `AVL_node` class, this class is a 100% private class, which is only accesible by the `Lane<T>` class, it is compiled into a statically linked class-library, which must be linked to everyone who includes the `Lane.hpp` header.
 
-Optional debug flags
--------
-The following flags can be set BEFORE including the header file, to give additional information (and degrade performance):
-
-
-    #define DEBUG_PRINT_ENABLE
-
-Makes available the `void Lane<T>::DEBUG_print_tree() const noexcept` function, which prints the underlying tree structure. For this to work, `T` need to be convertible to `std::string`, if it is not, you can define your own conversion function by defining this anywhere in your file, where `myClass` is your specific class:
+Splitting off this `AVL_node` is possible, since it doesn't know what type it stores (refering only to void pointers), it is done to speed up compile-time, by not recompiling functionalities common to all AVL trees, regardless of type.
 
 
-    template <>
-        std::string inline my_to_string<myClass>(const myClass& t)
-        {
-            return /*Custom function for printing*/
-        }
-
-Additionally, the flag:
-
-    #define DEBUG_PRINT_ON_INSERT
-
-Automatically enables `DEBUG_PRINT_ENABLE`. It prints the tree every time an element is inserted, it also prints whenever any rotation is called during insert into the AVL tree.
-
-The flag:
-
-    #define DEBUG_loading_counter
-
-Enables the `size_t loading_counter`, which counts how many internal node structs are currently loaded, providing a crude way of checking for memory leak. Also enables `std::mutex loading_counter_lock;` used to make any debugging and tests thread-safe.
 
 Member functions and typedefs
 -----
 The tree has a custom iterator for stepping through the tree from lowest to smallest, it implements all requirements for containers: These work exactly the way they are required for a container (plus some extra from SequenceContainter and Associative container):
 
+````c++
     Lane() noexcept;
     Lane(const Lane& other) noexcept;
     Lane(Lane&& other) noexcept;
@@ -85,15 +63,19 @@ The tree has a custom iterator for stepping through the tree from lowest to smal
     size_type size() const noexcept;
     size_type max_size() const noexcept;
     bool empty() const noexcept;
+````
 
 Be aware that `==` (and by extension `!=`), as per the requirements checks that: the size is the same, and the elements between `begin()` and `end()` are the same. Another function exists which also checks that the tree structure is the same:
 
+````c++
     bool strict_equal(const Lane<T>& Other) const;
+````
 
 Since AVL trees are not unique, it is possible to have to Lanes `a==b` be true but `a.strict_equal(b)` be false. This is unlikely to have any effects on anything
 
 To fulfill the requirements, the following types have been defined:
 
+````c++
     Lane<T>::value_type      = T;
     Lane<T>::pointer_type    = T*;
     Lane<T>::size_type       = size_t;
@@ -102,33 +84,39 @@ To fulfill the requirements, the following types have been defined:
     Lane<T>::const_reference = const T&;
     Lane<T>::iterator        = my_iterator;//custom LegacyForwardIterator
     Lane<T>::const_iterator  = const my_iterator;
+````
 
 Additionally these constructors can copy any other container in O(N log(N)):
 
+````c++
     template<LegacyInputIterator Iter>//Accepts any input iterator
         Lane(Iter start, Iter end);
     Lane(std::initializer_list<T> il);
     Lane& operator=(std::initializer_list<T> il);
-
+````
 
 
 These functions are provided by accessing the underlying AVL-tree, these should run in time O(log(N)) (but only if `DEBUG_PRINT_ON_INSERT` is disabled):
 
+````c++
     void insert(T&& t);
     void push_back(T t);//Same as insert, used for the std::back_inserter to work
     void erase(iterator i);
     void erase(const T& t);//same as erase(find(t);
     size_type count(double t)noexcept;
     size_type count(const T& t)noexcept;
+````
 
 The following finding functions all return `Lane<T>end()` for not found member, should be O(log(N))
 
+````c++
     iterator find(const T& t)noexcept;
     iterator find(double t)noexcept;
     iterator lower_bound(T t)noexcept;
     iterator lower_bound(double t)noexcept;
     iterator upper_bound(T t)noexcept;
     iterator upper_bound(double t)noexcept;
+````
 
 Const versions also exists
 
@@ -140,14 +128,17 @@ Const versions also exists
     const_iterator lower_bound(double t) const noexcept;
     const_iterator upper_bound(T t) const noexcept;
     const_iterator upper_bound(double t) const noexcept;
-```
+````
 
 The underlying linked list structure provides a function for checking if everything is still sorted:
 
+````c++
     bool is_still_sorted() noexcept;
+````
 
 It also provides functions for get the element just before, or just before or after an iterator in time O(1), or at the start and end:
 
+````c++
     iterator first() noexcept;
     iterator last () noexcept;
     const_iterator first() const noexcept;
@@ -157,13 +148,16 @@ It also provides functions for get the element just before, or just before or af
     iterator prev(const_iterator&) noexcept;
     const_iterator next(const_iterator&) const noexcept;
     const_iterator prev(const_iterator&) const noexcept;
+````
 
 By mixing these with `lower\_bound`, `upper\_bound` and `find`, we can make these O(log(N)) functions:
 
+````c++
     bool next(T& out, const T&) noexcept;
     bool prev(T& out, const T&) noexcept;
     bool next(const T& out, const T&) const noexcept;
     bool prev(const T& out, const T&) const noexcept;
+````
 
 Lane::iterator
 ------
@@ -216,12 +210,3 @@ In addition, the following expressions must be valid, have the expected types an
 
 [cpprforward]:  https://en.cppreference.com/w/cpp/named_req/ForwardIterator "Cppreference, Forward Iterator"
 
-
-
-TO BE DONE
-=======
-CONVERT ALL FUNCTIONS IN THIS DOCUMENT TO A TABLE
-
-INCLUDE MORE REFERENCES TO CPPREFERENCE
-
-CONSIDER IMPLEMENTING ASSOCIATIVE CONTAINER
